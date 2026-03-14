@@ -1,0 +1,2124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriLog — Daily Nutrition Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F2ED;--surface:#FFFEF9;--surface2:#F0EDE7;--border:#DDD9D0;
+  --text:#1A1814;--text2:#6B6760;--text3:#9E9B95;
+  --green:#2D6A4F;--green-bg:#D8F3DC;--amber:#A87B20;--amber-bg:#FFF0C0;
+  --red:#9B2C2C;--red-bg:#FFE4E4;--accent:#2D6A4F;
+  --radius:10px;--radius-lg:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;line-height:1.5;}
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:300;}
+
+.app{display:flex;min-height:100vh;}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:28px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.logo{padding:0 20px 28px;border-bottom:1px solid var(--border);}
+.logo h1{font-size:20px;letter-spacing:-.5px;color:var(--accent);}
+.logo span{font-size:11px;color:var(--text3);}
+.nav{padding:16px 0;flex:1;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:var(--text2);transition:all .15s;border-left:2px solid transparent;font-size:12px;letter-spacing:.02em;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:#E8F5EC;font-weight:500;}
+.nav-item .icon{font-size:14px;width:18px;text-align:center;}
+.nav-section{padding:18px 20px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);}
+.main{flex:1;padding:32px;max-width:900px;overflow-x:hidden;}
+
+/* Buttons */
+.btn{padding:8px 16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);cursor:pointer;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{background:var(--surface2);}
+.btn-primary{background:var(--accent);color:white;border-color:var(--accent);}
+.btn-primary:hover{background:#235540;}
+.btn-danger{border-color:var(--border);color:var(--text3);}
+.btn-danger:hover{border-color:var(--red);color:var(--red);background:var(--red-bg);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+.btn-icon-round{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .15s;flex-shrink:0;}
+.btn-icon-round:hover{background:var(--surface2);}
+
+/* Date bar */
+.date-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:12px;flex-wrap:wrap;}
+.date-bar h2{font-size:26px;letter-spacing:-.5px;}
+.date-nav{display:flex;gap:8px;align-items:center;}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-header h3{font-size:14px;font-weight:500;}
+
+/* Nutrition table */
+.totals-table{width:100%;border-collapse:collapse;}
+.totals-table th{padding:10px 20px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:500;background:var(--surface2);border-bottom:1px solid var(--border);}
+.totals-table th:last-child,.totals-table td:last-child{text-align:center;}
+.totals-table td{padding:10px 20px;border-bottom:1px solid var(--border);font-size:12.5px;}
+.totals-table tr:last-child td{border-bottom:none;}
+.totals-table tr:hover td{background:var(--surface2);}
+.totals-table td:nth-child(2),.totals-table td:nth-child(3){color:var(--text2);}
+.status-dot{width:14px;height:14px;border-radius:50%;display:inline-block;}
+.dot-green{background:#27AE60;}.dot-amber{background:#F0A500;}.dot-red{background:#E53E3E;}
+
+/* Progress bars */
+.progress-bar{height:5px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:4px;}
+.progress-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+.fill-green{background:#27AE60;}.fill-amber{background:#F0A500;}.fill-red{background:#E53E3E;}
+
+/* Stats row */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.stat-value{font-family:'Fraunces',serif;font-size:24px;font-weight:300;letter-spacing:-.5px;line-height:1.1;}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* Meals */
+.meals-grid{display:flex;flex-direction:column;gap:12px;}
+.meal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.meal-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.meal-header:hover{background:var(--surface2);}
+.meal-title{display:flex;align-items:center;gap:10px;}
+.meal-icon{width:32px;height:32px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;}
+.meal-name{font-weight:500;font-size:13px;}
+.meal-cals{font-size:12px;color:var(--text3);margin-top:1px;}
+.meal-macros{display:flex;gap:14px;font-size:11px;color:var(--text2);}
+.meal-body{border-top:1px solid var(--border);display:none;}
+.meal-body.open{display:block;}
+.food-item{padding:9px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-size:12px;}
+.food-item:last-child{border-bottom:none;}
+.food-item-name{color:var(--text);}
+.food-item-portion{color:var(--text3);font-size:11px;margin-top:1px;}
+.food-item-macros{display:flex;gap:12px;color:var(--text2);font-size:11px;}
+.food-item-macros span:first-child{color:var(--text);font-weight:500;}
+.add-food-row{padding:10px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+
+/* Form elements */
+.form-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);font-family:'DM Mono',monospace;font-size:12.5px;color:var(--text);outline:none;transition:border-color .15s;}
+.form-input:focus{border-color:var(--accent);}
+.form-input::placeholder{color:var(--text3);}
+.form-row{margin-bottom:12px;}
+.form-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:5px;display:block;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-section-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+
+/* Staples strip */
+.staples-strip-wrap{margin-bottom:16px;}
+.staples-strip-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:8px;}
+.staples-strip{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;}
+.staples-strip::-webkit-scrollbar{display:none;}
+.staple-chip{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--border);border-radius:20px;background:var(--surface);cursor:pointer;font-size:11.5px;color:var(--text2);transition:all .15s;white-space:nowrap;}
+.staple-chip:hover{border-color:var(--accent);color:var(--accent);background:var(--green-bg);}
+.staple-chip .chip-cals{color:var(--text3);font-size:10px;}
+
+/* Staples page */
+.staples-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.search-input{flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .15s;}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--text3);}
+.category-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.cat-pill{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:11px;cursor:pointer;color:var(--text2);transition:all .15s;}
+.cat-pill:hover{border-color:var(--accent);color:var(--accent);}
+.cat-pill.active{background:var(--accent);color:white;border-color:var(--accent);}
+.staples-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface);}
+.staple-row{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--border);transition:background .12s;}
+.staple-row:last-child{border-bottom:none;}
+.staple-row:hover{background:var(--surface2);}
+.staple-row-left{display:flex;align-items:center;gap:10px;}
+.staple-emoji{width:30px;height:30px;border-radius:7px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.staple-row-name{font-size:12.5px;font-weight:500;}
+.staple-row-meta{font-size:11px;color:var(--text3);margin-top:1px;}
+.staple-row-right{display:flex;align-items:center;gap:8px;}
+.staple-row-cals{font-size:12px;color:var(--text2);min-width:54px;text-align:right;}
+.cat-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;border:1px solid var(--border);white-space:nowrap;}
+
+/* Categories page */
+.categories-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface);margin-bottom:20px;}
+.cat-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);}
+.cat-row:last-child{border-bottom:none;}
+.cat-row:hover{background:var(--surface2);}
+.cat-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cat-row-icon{font-size:20px;width:32px;text-align:center;flex-shrink:0;}
+.cat-row-info{flex:1;}
+.cat-row-name{font-size:13px;font-weight:500;}
+.cat-row-count{font-size:11px;color:var(--text3);margin-top:1px;}
+.cat-row-actions{display:flex;gap:6px;}
+.cat-inline-edit{display:none;align-items:center;gap:8px;padding:8px 16px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.cat-inline-edit.open{display:flex;}
+
+/* Color swatches */
+.color-swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;}
+.color-swatch:hover,.color-swatch.selected{border-color:var(--text);transform:scale(1.15);}
+
+/* Icon picker */
+.icon-picker{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.icon-opt{width:36px;height:36px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all .15s;}
+.icon-opt:hover,.icon-opt.selected{border-color:var(--accent);background:var(--green-bg);}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;width:460px;max-width:100%;max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:17px;margin-bottom:18px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+
+/* Inline scan inside staple modal */
+.inline-scan-zone{border:1.5px dashed var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;margin-bottom:16px;background:var(--surface2);}
+.inline-scan-zone:hover{border-color:var(--accent);background:var(--green-bg);}
+.inline-scan-zone .scan-icon{font-size:22px;flex-shrink:0;}
+.inline-scan-zone p{font-size:12px;color:var(--text2);line-height:1.4;}
+.inline-scan-zone p strong{color:var(--text);}
+.inline-scan-preview{margin-bottom:12px;display:none;}
+.inline-scan-preview img{max-height:120px;border-radius:var(--radius);border:1px solid var(--border);}
+.inline-scan-status{font-size:12px;color:var(--text3);padding:8px 0;text-align:center;display:none;}
+.inline-scan-ok{font-size:12px;color:var(--green);background:var(--green-bg);border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;display:none;}
+
+/* Serving multiplier modal */
+.multiplier-preview{background:var(--surface2);border-radius:var(--radius);padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.multiplier-preview .prev-icon{font-size:24px;}
+.multiplier-preview .prev-name{font-size:13px;font-weight:500;}
+.multiplier-preview .prev-base{font-size:11px;color:var(--text3);margin-top:2px;}
+.qty-row{display:flex;align-items:center;gap:12px;margin:16px 0;}
+.qty-btn{width:36px;height:36px;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .15s;flex-shrink:0;}
+.qty-btn:hover{background:var(--surface2);}
+.qty-input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);font-family:'DM Mono',monospace;font-size:15px;color:var(--text);outline:none;text-align:center;transition:border-color .15s;}
+.qty-input:focus{border-color:var(--accent);}
+.nutrition-preview{background:var(--surface2);border-radius:var(--radius);padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin:12px 0;}
+.np-row{display:flex;justify-content:space-between;font-size:11.5px;}
+.np-row span:first-child{color:var(--text3);}
+.np-row span:last-child{color:var(--text);font-weight:500;}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-bottom:20px;flex-wrap:wrap;}
+.tab{padding:7px 16px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s;border:1px solid transparent;}
+.tab:hover{background:var(--surface2);}
+.tab.active{background:var(--surface);border-color:var(--border);color:var(--text);font-weight:500;}
+
+/* Goals */
+.goals-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;}
+.goal-item{display:flex;flex-direction:column;gap:4px;}
+.goal-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
+.goal-value{display:flex;align-items:center;gap:8px;}
+.goal-input{width:80px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .15s;}
+.goal-input:focus{border-color:var(--accent);}
+.goal-unit{font-size:11px;color:var(--text3);}
+
+/* Weekly */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:16px;}
+.day-col{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.day-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
+.day-bar-wrap{width:100%;height:80px;display:flex;align-items:flex-end;justify-content:center;background:var(--surface2);border-radius:6px;overflow:hidden;}
+.day-bar{width:60%;background:var(--accent);border-radius:4px 4px 0 0;transition:height .4s ease;opacity:.7;}
+.day-bar.today{opacity:1;}
+.day-cal{font-size:10px;color:var(--text2);}
+
+/* Upload/scan */
+.upload-zone{border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:28px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);}
+.upload-zone:hover{border-color:var(--accent);background:#F0FAF3;}
+.upload-zone .icon{font-size:24px;margin-bottom:8px;}
+.upload-zone p{font-size:12px;color:var(--text2);line-height:1.6;}
+.scan-result{background:#F0FAF3;border:1px solid #B7E4C7;border-radius:var(--radius);padding:12px 16px;margin-top:12px;display:none;}
+.scan-result.show{display:block;}
+.scan-result h4{font-size:12px;color:var(--green);margin-bottom:8px;}
+.scan-result table{width:100%;font-size:12px;}
+.scan-result td{padding:2px 0;color:var(--text2);}
+.scan-result td:last-child{color:var(--text);text-align:right;}
+
+/* Today's Log */
+.todays-log{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;}
+.todays-log-header{padding:13px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.todays-log-header h3{font-size:14px;font-weight:500;}
+.todays-log-header span{font-size:11px;color:var(--text3);}
+.log-meal-group{}
+.log-meal-label{padding:7px 20px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.log-meal-label:hover{background:#E8E5DE;}
+.log-meal-label-name{display:flex;align-items:center;gap:7px;}
+.log-meal-kcal{font-size:10px;color:var(--text3);}
+.log-meal-label-right{display:flex;align-items:center;gap:10px;}
+.log-chevron{font-size:9px;transition:transform .2s;display:inline-block;opacity:.5;}
+.log-chevron.collapsed{transform:rotate(-90deg);}
+.log-group-items{display:block;}
+.log-group-items.collapsed{display:none;}
+.log-toggle-all{font-size:11px;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s;white-space:nowrap;background:none;border:none;font-family:'DM Mono',monospace;}
+.log-toggle-all:hover{color:var(--accent);background:var(--green-bg);}
+.log-item{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;border-bottom:1px solid var(--border);gap:12px;transition:background .12s;}
+.log-item:hover{background:var(--surface2);}
+.log-item:last-child{border-bottom:none;}
+.log-item-left{flex:1;min-width:0;}
+.log-item-name{font-size:12.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.log-item-portion{font-size:11px;color:var(--text3);margin-top:1px;}
+.log-item-macros{display:flex;gap:10px;font-size:11px;color:var(--text2);flex-shrink:0;align-items:center;}
+.log-item-macros .log-kcal{font-weight:500;color:var(--text);min-width:52px;text-align:right;}
+.log-item-macros .log-macro{color:var(--text3);}
+.log-item-remove{width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);transition:all .15s;flex-shrink:0;line-height:1;}
+.log-item-remove:hover{border-color:var(--red);color:var(--red);background:var(--red-bg);}
+.log-empty{padding:20px;text-align:center;font-size:12px;color:var(--text3);}
+.log-footer{padding:10px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:6px;}
+
+/* qty-adjust inline */
+.qty-inline{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;align-items:center;justify-content:center;}
+.qty-inline.open{display:flex;}
+.qty-inline-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;width:300px;max-width:92vw;}
+.qty-inline-box h4{font-size:14px;margin-bottom:4px;}
+.qty-inline-box p{font-size:11px;color:var(--text3);margin-bottom:14px;}
+
+/* Pages */
+.page{display:none;}
+.page.active{display:block;}
+
+/* Empty state */
+.empty-state{text-align:center;padding:48px 20px;color:var(--text3);}
+.empty-state .es-icon{font-size:32px;margin-bottom:12px;}
+.empty-state p{font-size:13px;line-height:1.6;margin-bottom:16px;}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* Mobile bottom nav */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:50;padding:0 4px;padding-bottom:env(safe-area-inset-bottom,0px);}
+.bottom-nav-inner{display:flex;justify-content:space-around;}
+.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;cursor:pointer;color:var(--text3);font-size:10px;letter-spacing:.02em;transition:color .15s;-webkit-tap-highlight-color:transparent;}
+.bottom-nav-item .bn-icon{font-size:18px;line-height:1;}
+.bottom-nav-item.active{color:var(--accent);}
+.mobile-header{display:none;position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);z-index:40;padding:14px 16px 12px;align-items:center;justify-content:space-between;}
+.mobile-header h1{font-size:17px;color:var(--accent);}
+
+@media(max-width:640px){
+  .sidebar{display:none;}
+  .bottom-nav{display:block;}
+  .mobile-header{display:flex;}
+  .app{flex-direction:column;}
+  .main{padding:16px 14px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));max-width:100%;}
+  .date-bar{margin-bottom:16px;gap:10px;}
+  .date-bar h2{font-size:20px;}
+  .stats-row{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+  .stat-card{padding:12px;}
+  .stat-value{font-size:20px;}
+  .totals-table th,.totals-table td{padding:8px 10px;font-size:11.5px;}
+  .totals-table th:nth-child(3),.totals-table td:nth-child(3){display:none;}
+  .meal-header{flex-wrap:wrap;gap:6px;}
+  .meal-macros{font-size:10px;gap:8px;padding-left:42px;}
+  .food-item{flex-wrap:wrap;gap:4px;}
+  .food-item-macros{flex-wrap:wrap;gap:6px;}
+  .form-grid{grid-template-columns:1fr;}
+  .goals-grid{grid-template-columns:1fr;}
+  .week-grid{padding:10px 8px;gap:4px;}
+  .day-bar-wrap{height:60px;}
+  .day-cal{font-size:9px;}
+  .card-header{padding:12px 14px;}
+  .upload-zone{padding:20px 14px;}
+  .btn{padding:9px 14px;font-size:13px;}
+  .modal{padding:20px 16px;}
+  .staple-row-right .cat-badge{display:none;}
+  .nutrition-preview{grid-template-columns:1fr;}
+}
+
+/* ── Recipe cards ── */
+.recipes-grid{display:flex;flex-direction:column;gap:12px;}
+.recipe-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+.recipe-card-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.recipe-card-title{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.recipe-card-icon{width:36px;height:36px;border-radius:9px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.recipe-card-name{font-weight:500;font-size:13px;}
+.recipe-card-meta{font-size:11px;color:var(--text3);margin-top:2px;}
+.recipe-card-actions{display:flex;gap:6px;flex-shrink:0;}
+.recipe-ingredients{border-top:1px solid var(--border);}
+.recipe-ingredient-row{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border);font-size:12px;}
+.recipe-ingredient-row:last-child{border-bottom:none;}
+.recipe-ingredient-left{display:flex;align-items:center;gap:8px;color:var(--text2);}
+.recipe-ingredient-icon{font-size:13px;width:20px;text-align:center;}
+.recipe-ingredient-qty{font-size:11px;color:var(--text3);}
+.recipe-ingredient-cals{font-size:11px;color:var(--text3);}
+.recipe-missing{color:var(--red);font-size:11px;font-style:italic;}
+/* recipe chip in strip — slightly different style */
+.recipe-chip{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:6px 11px;border:1.5px solid var(--accent);border-radius:20px;background:var(--green-bg);cursor:pointer;font-size:11.5px;color:var(--accent);transition:all .15s;white-space:nowrap;}
+.recipe-chip:hover{background:var(--accent);color:white;}
+.recipe-chip .chip-cals{opacity:.7;font-size:10px;}
+/* log recipe entry */
+.log-recipe-entry{border-bottom:1px solid var(--border);}
+.log-recipe-entry:last-child{border-bottom:none;}
+.log-recipe-header{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;cursor:pointer;user-select:none;transition:background .12s;}
+.log-recipe-header:hover{background:var(--surface2);}
+.log-recipe-title{display:flex;align-items:center;gap:8px;}
+.log-recipe-icon{font-size:14px;}
+.log-recipe-name{font-size:12.5px;font-weight:500;}
+.log-recipe-scale{font-size:11px;color:var(--text3);margin-left:4px;}
+.log-recipe-right{display:flex;align-items:center;gap:10px;}
+.log-recipe-cals{font-size:12px;font-weight:500;color:var(--text);}
+.log-recipe-chevron{font-size:9px;opacity:.5;transition:transform .2s;}
+.log-recipe-chevron.open{transform:rotate(180deg);}
+.log-recipe-items{display:none;background:var(--surface2);}
+.log-recipe-items.open{display:block;}
+.log-recipe-item{display:flex;align-items:center;justify-content:space-between;padding:7px 20px 7px 36px;border-bottom:1px solid var(--border);font-size:11.5px;}
+.log-recipe-item:last-child{border-bottom:none;}
+.log-recipe-item-name{color:var(--text2);}
+.log-recipe-item-portion{color:var(--text3);font-size:10.5px;}
+.log-recipe-item-macros{display:flex;gap:8px;font-size:10.5px;color:var(--text3);}
+</style>
+</head>
+<body>
+
+<header class="mobile-header">
+  <h1>NutriLog</h1>
+  <button class="btn btn-primary" style="font-size:12px;padding:7px 12px;" onclick="mobilePrimaryAction()">+ Add</button>
+</header>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="logo"><h1>NutriLog</h1><span>nutrition tracker</span></div>
+    <div class="nav">
+      <div class="nav-section">Daily</div>
+      <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">◈</span> Dashboard</div>
+      <div class="nav-item" onclick="showPage('meals')"><span class="icon">◉</span> Log Meals</div>
+      <div class="nav-item" onclick="showPage('scan')"><span class="icon">◎</span> Scan Label</div>
+      <div class="nav-section">Library</div>
+      <div class="nav-item" onclick="showPage('staples')"><span class="icon">★</span> Staples</div>
+      <div class="nav-item" onclick="showPage('recipes')"><span class="icon">⬡</span> Recipes</div>
+      <div class="nav-section">Trends</div>
+      <div class="nav-item" onclick="showPage('weekly')"><span class="icon">◫</span> Weekly View</div>
+      <div class="nav-item" onclick="showPage('monthly')"><span class="icon">▣</span> Monthly Avg</div>
+      <div class="nav-section">Settings</div>
+      <div class="nav-item" onclick="showPage('categories')"><span class="icon">⊞</span> Categories</div>
+      <div class="nav-item" onclick="showPage('goals')"><span class="icon">◌</span> Goals</div>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="date-bar">
+        <div>
+          <h2>Today Totals</h2>
+          <div style="font-size:12px;color:var(--text3);margin-top:3px;" id="today-date"></div>
+        </div>
+        <div class="date-nav">
+          <button class="btn" style="padding:7px 10px;">←</button>
+          <button class="btn" onclick="showPage('meals')">+ Add Meal</button>
+          <button class="btn" style="padding:7px 10px;">→</button>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Calories</div>
+          <div class="stat-value" id="dash-cals">0</div>
+          <div class="stat-sub">of ~2,000 kcal</div>
+          <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="dash-cals-bar" style="width:0%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Protein</div>
+          <div class="stat-value" id="dash-protein">0<span style="font-size:14px;color:var(--text3)">g</span></div>
+          <div class="stat-sub">of 70–85g</div>
+          <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="dash-protein-bar" style="width:0%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Fiber</div>
+          <div class="stat-value" id="dash-fiber">0<span style="font-size:14px;color:var(--text3)">g</span></div>
+          <div class="stat-sub">of 30–35g</div>
+          <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="dash-fiber-bar" style="width:0%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sodium</div>
+          <div class="stat-value" id="dash-sodium">0<span style="font-size:14px;color:var(--text3)">mg</span></div>
+          <div class="stat-sub">of ≤2,000mg</div>
+          <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" id="dash-sodium-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <!-- Today's Log -->
+      <div class="todays-log">
+        <div class="todays-log-header">
+          <h3>Today's Log</h3>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button class="log-toggle-all" id="log-toggle-all-btn" onclick="toggleAllLogGroups()">collapse all</button>
+            <span id="log-item-count">0 items</span>
+          </div>
+        </div>
+        <div id="todays-log-body">
+          <div class="log-empty">Nothing logged yet — add a meal or tap a staple.</div>
+        </div>
+        <div class="log-footer">
+          <button class="btn btn-sm" onclick="showPage('meals')">+ Add Meal</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Nutrition Breakdown</h3></div>
+        <table class="totals-table">
+          <thead><tr><th>Metric</th><th>Total</th><th>Goal</th><th>Status</th></tr></thead>
+          <tbody id="nutrition-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MEALS -->
+    <div id="page-meals" class="page">
+      <div class="date-bar">
+        <h2>Log Meals</h2>
+        <button class="btn btn-primary" onclick="openAddMealModal()">+ New Meal</button>
+      </div>
+      <div class="staples-strip-wrap" id="staples-strip-wrap">
+        <div class="staples-strip-label">Add from staples & recipes</div>
+        <div class="staples-strip" id="staples-strip"></div>
+      </div>
+      <div class="meals-grid" id="meals-list"></div>
+    </div>
+
+    <!-- SCAN -->
+    <div id="page-scan" class="page">
+      <div class="date-bar"><h2>Scan Label</h2></div>
+      <div class="card" style="padding:20px;">
+        <div class="upload-zone" onclick="document.getElementById('scan-file').click()">
+          <div class="icon">📷</div>
+          <p><strong>Click to upload</strong> or drag & drop a nutrition label<br>PNG, JPG, HEIC — AI extracts all values</p>
+          <input type="file" id="scan-file" accept="image/*" style="display:none" onchange="handleMainScan(this)">
+        </div>
+        <div id="main-scan-preview" style="display:none;margin-top:16px;"><img id="main-preview-img" style="max-width:100%;border-radius:var(--radius);border:1px solid var(--border);"></div>
+        <div id="main-scan-loading" style="display:none;margin-top:16px;text-align:center;padding:20px;color:var(--text3);font-size:12px;">◌ Extracting nutrition data...</div>
+        <div class="scan-result" id="main-scan-result">
+          <h4>✓ Extracted nutrition data</h4>
+          <table id="main-scan-table"></table>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="addScannedToLog()">Add to Today's Log</button>
+            <button class="btn" onclick="saveScannedAsStaple()">Save as Staple</button>
+            <button class="btn" onclick="resetMainScan()">Scan Another</button>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+          <p style="font-size:12px;color:var(--text3);margin-bottom:12px;">Or enter manually:</p>
+          <div class="form-grid">
+            <div class="form-row"><label class="form-label">Food Name</label><input class="form-input" id="manual-name" placeholder="Oat pancake"></div>
+            <div class="form-row"><label class="form-label">Serving Size</label><input class="form-input" id="manual-serving" placeholder="80g"></div>
+            <div class="form-row"><label class="form-label">Calories (kcal)</label><input class="form-input" type="number" id="manual-cals" placeholder="180"></div>
+            <div class="form-row"><label class="form-label">Protein (g)</label><input class="form-input" type="number" id="manual-protein" placeholder="8"></div>
+            <div class="form-row"><label class="form-label">Carbs (g)</label><input class="form-input" type="number" id="manual-carbs" placeholder="24"></div>
+            <div class="form-row"><label class="form-label">Fat (g)</label><input class="form-input" type="number" id="manual-fat" placeholder="5"></div>
+            <div class="form-row"><label class="form-label">Fiber (g)</label><input class="form-input" type="number" id="manual-fiber" placeholder="3"></div>
+            <div class="form-row"><label class="form-label">Sodium (mg)</label><input class="form-input" type="number" id="manual-sodium" placeholder="90"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="addManualToLog()">Add to Log</button>
+            <button class="btn" onclick="saveManualAsStaple()">Save as Staple</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAPLES -->
+    <div id="page-staples" class="page">
+      <div class="date-bar">
+        <h2>Staples</h2>
+        <button class="btn btn-primary" onclick="openNewStapleModal()">+ New Staple</button>
+      </div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:18px;margin-top:-16px;">Individual foods you eat regularly. Add to any meal in one tap — choose your quantity each time.</p>
+      <div class="staples-toolbar">
+        <input class="search-input" id="staples-search" placeholder="Search staples…" oninput="renderStaples()">
+      </div>
+      <div class="category-filters" id="staples-cat-filters"></div>
+      <div id="staples-list-wrap"></div>
+    </div>
+
+    <!-- RECIPES -->
+    <div id="page-recipes" class="page">
+      <div class="date-bar">
+        <h2>Recipes</h2>
+        <button class="btn btn-primary" onclick="openNewRecipeModal()">+ New Recipe</button>
+      </div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:18px;margin-top:-16px;">Named collections of staples. Log a whole recipe in one tap — each ingredient appears individually in Today's Log.</p>
+      <div id="recipes-list-wrap"></div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div id="page-categories" class="page">
+      <div class="date-bar">
+        <h2>Categories</h2>
+        <button class="btn btn-primary" onclick="openNewCatModal()">+ New Category</button>
+      </div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:20px;margin-top:-16px;">Categories are used across staples, meals and trends. Rename or delete — changes cascade everywhere.</p>
+      <div id="categories-list-wrap"></div>
+    </div>
+
+    <!-- WEEKLY -->
+    <div id="page-weekly" class="page">
+      <div class="date-bar">
+        <h2>Weekly View</h2>
+        <div class="tabs">
+          <div class="tab active" onclick="setWeekTab(this)">Calories</div>
+          <div class="tab" onclick="setWeekTab(this)">Protein</div>
+          <div class="tab" onclick="setWeekTab(this)">Fiber</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><h3>This Week — Calories</h3></div>
+        <div class="week-grid" id="week-grid"></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">7-Day Avg Cals</div><div class="stat-value">1,624</div><div class="stat-sub">↑ vs last week</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Protein</div><div class="stat-value">74<span style="font-size:14px;color:var(--text3)">g</span></div><div class="stat-sub">within goal</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Fiber</div><div class="stat-value">26<span style="font-size:14px;color:var(--text3)">g</span></div><div class="stat-sub">↑ vs last week</div></div>
+        <div class="stat-card"><div class="stat-label">Days On Track</div><div class="stat-value">5<span style="font-size:14px;color:var(--text3)">/7</span></div><div class="stat-sub">this week</div></div>
+      </div>
+    </div>
+
+    <!-- MONTHLY -->
+    <div id="page-monthly" class="page">
+      <div class="date-bar"><h2>Monthly Averages</h2></div>
+      <div class="card">
+        <div class="card-header"><h3>March 2026 — Averages vs Goals</h3></div>
+        <table class="totals-table">
+          <thead><tr><th>Metric</th><th>Avg (Daily)</th><th>Goal</th><th>Trend</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>Calories</td><td>1,724 kcal</td><td>~2,000 kcal</td><td style="color:var(--green);font-size:12px;">↑ improving</td><td><span class="status-dot dot-amber"></span></td></tr>
+            <tr><td>Protein</td><td>74 g</td><td>70–85 g</td><td style="color:var(--green);font-size:12px;">✓ on track</td><td><span class="status-dot dot-green"></span></td></tr>
+            <tr><td>Fiber</td><td>27 g</td><td>30–35 g</td><td style="color:var(--amber);font-size:12px;">↑ improving</td><td><span class="status-dot dot-amber"></span></td></tr>
+            <tr><td>Sodium</td><td>1,450 mg</td><td>≤2,000 mg</td><td style="color:var(--green);font-size:12px;">✓ on track</td><td><span class="status-dot dot-green"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div id="page-goals" class="page">
+      <div class="date-bar"><h2>Nutrition Goals</h2><button class="btn btn-primary" onclick="saveGoals()">Save Goals</button></div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3>Calorie & Macros</h3></div>
+        <div class="goals-grid">
+          <div class="goal-item"><div class="goal-label">Daily Calories</div><div class="goal-value"><input class="goal-input" type="number" id="goal-cals" value="2000"><span class="goal-unit">kcal</span></div></div>
+          <div class="goal-item"><div class="goal-label">Protein</div><div class="goal-value"><input class="goal-input" type="number" id="goal-protein-min" value="70" style="width:58px;"><span class="goal-unit">–</span><input class="goal-input" type="number" id="goal-protein-max" value="85" style="width:58px;"><span class="goal-unit">g</span></div></div>
+          <div class="goal-item"><div class="goal-label">Fiber</div><div class="goal-value"><input class="goal-input" type="number" id="goal-fiber-min" value="30" style="width:58px;"><span class="goal-unit">–</span><input class="goal-input" type="number" id="goal-fiber-max" value="35" style="width:58px;"><span class="goal-unit">g</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Limits</h3></div>
+        <div class="goals-grid">
+          <div class="goal-item"><div class="goal-label">Sodium max</div><div class="goal-value"><input class="goal-input" type="number" id="goal-sodium" value="2000"><span class="goal-unit">mg</span></div></div>
+          <div class="goal-item"><div class="goal-label">Added Sugar max</div><div class="goal-value"><input class="goal-input" type="number" id="goal-sugar" value="25"><span class="goal-unit">g</span></div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Mobile bottom nav -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <div class="bottom-nav-item active" id="bn-dashboard" onclick="showPage('dashboard')"><span class="bn-icon">◈</span><span>Today</span></div>
+    <div class="bottom-nav-item" id="bn-meals" onclick="showPage('meals')"><span class="bn-icon">◉</span><span>Meals</span></div>
+    <div class="bottom-nav-item" id="bn-staples" onclick="showPage('staples')"><span class="bn-icon">★</span><span>Staples</span></div>
+    <div class="bottom-nav-item" id="bn-recipes" onclick="showPage('recipes')"><span class="bn-icon">⬡</span><span>Recipes</span></div>
+    <div class="bottom-nav-item" id="bn-goals" onclick="showPage('goals')"><span class="bn-icon">◌</span><span>Goals</span></div>
+  </div>
+</nav>
+
+<!-- QTY ADJUST (from log) -->
+<div class="qty-inline" id="qty-inline-modal">
+  <div class="qty-inline-box">
+    <h4 id="qil-name">Item</h4>
+    <p id="qil-portion"></p>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="adjustLogQty(-0.5)">−</button>
+      <input class="qty-input" type="number" id="qil-qty" value="1" min="0.25" step="0.25">
+      <button class="qty-btn" onclick="adjustLogQty(0.5)">+</button>
+    </div>
+    <div id="qil-preview" style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:12px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" onclick="confirmLogRemove()">Remove</button>
+      <button class="btn btn-sm" onclick="closeQtyInline()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmLogQty()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- SERVING MODAL -->
+<div class="modal-overlay" id="serving-modal">
+  <div class="modal">
+    <h3>Add Staple</h3>
+    <div class="multiplier-preview">
+      <div class="prev-icon" id="smp-icon">🥣</div>
+      <div><div class="prev-name" id="smp-name">—</div><div class="prev-base" id="smp-base">Per serving</div></div>
+    </div>
+    <label class="form-label">How many servings?</label>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="adjustQty(-0.5)">−</button>
+      <input class="qty-input" type="number" id="qty-input" value="1" min="0.25" step="0.25" oninput="updateNutritionPreview()">
+      <button class="qty-btn" onclick="adjustQty(0.5)">+</button>
+    </div>
+    <div class="nutrition-preview" id="nutrition-preview"></div>
+    <div class="form-row">
+      <label class="form-label">Add to meal</label>
+      <select class="form-input" id="target-meal-select" style="padding:8px 12px;"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('serving-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmAddStaple()">Add to Meal</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW/EDIT STAPLE MODAL -->
+<div class="modal-overlay" id="staple-modal">
+  <div class="modal" style="width:500px;">
+    <h3 id="staple-modal-title">New Staple</h3>
+
+    <!-- Inline scan zone -->
+    <div class="inline-scan-zone" onclick="document.getElementById('staple-scan-file').click()">
+      <div class="scan-icon">📷</div>
+      <div>
+        <p><strong>Scan a nutrition label</strong> to auto-fill the fields below</p>
+        <p style="margin-top:2px;font-size:11px;color:var(--text3);">Tap to take photo or upload image</p>
+      </div>
+      <input type="file" id="staple-scan-file" accept="image/*" style="display:none" onchange="handleStapleScan(this)">
+    </div>
+    <div class="inline-scan-preview" id="staple-scan-preview">
+      <img id="staple-scan-img" style="max-height:100px;border-radius:var(--radius);border:1px solid var(--border);">
+    </div>
+    <div class="inline-scan-status" id="staple-scan-status">◌ Extracting nutrition data…</div>
+    <div class="inline-scan-ok" id="staple-scan-ok">✓ Fields pre-filled from label — review and adjust if needed</div>
+
+    <!-- Name + Category + Icon -->
+    <div class="form-grid">
+      <div class="form-row" style="grid-column:1/-1;">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="se-name" placeholder="e.g. Peanut butter (smooth)">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Category</label>
+        <select class="form-input" id="se-category" style="padding:8px 12px;">
+          <option value="">— select —</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Serving size label</label>
+        <input class="form-input" id="se-serving" placeholder="1 tbsp (15g)">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">Icon</label>
+      <div class="icon-picker" id="se-icon-picker">
+        <div class="icon-opt selected" data-icon="🥣" onclick="selectStapleIcon(this)">🥣</div>
+        <div class="icon-opt" data-icon="🥞" onclick="selectStapleIcon(this)">🥞</div>
+        <div class="icon-opt" data-icon="🍳" onclick="selectStapleIcon(this)">🍳</div>
+        <div class="icon-opt" data-icon="🥚" onclick="selectStapleIcon(this)">🥚</div>
+        <div class="icon-opt" data-icon="🍌" onclick="selectStapleIcon(this)">🍌</div>
+        <div class="icon-opt" data-icon="🫐" onclick="selectStapleIcon(this)">🫐</div>
+        <div class="icon-opt" data-icon="🍯" onclick="selectStapleIcon(this)">🍯</div>
+        <div class="icon-opt" data-icon="🥜" onclick="selectStapleIcon(this)">🥜</div>
+        <div class="icon-opt" data-icon="🧈" onclick="selectStapleIcon(this)">🧈</div>
+        <div class="icon-opt" data-icon="🥛" onclick="selectStapleIcon(this)">🥛</div>
+        <div class="icon-opt" data-icon="🫙" onclick="selectStapleIcon(this)">🫙</div>
+        <div class="icon-opt" data-icon="🥗" onclick="selectStapleIcon(this)">🥗</div>
+        <div class="icon-opt" data-icon="🍗" onclick="selectStapleIcon(this)">🍗</div>
+        <div class="icon-opt" data-icon="🐟" onclick="selectStapleIcon(this)">🐟</div>
+        <div class="icon-opt" data-icon="🫘" onclick="selectStapleIcon(this)">🫘</div>
+        <div class="icon-opt" data-icon="🥤" onclick="selectStapleIcon(this)">🥤</div>
+        <div class="icon-opt" data-icon="☕" onclick="selectStapleIcon(this)">☕</div>
+        <div class="icon-opt" data-icon="🍫" onclick="selectStapleIcon(this)">🍫</div>
+        <div class="icon-opt" data-icon="◇" onclick="selectStapleIcon(this)">◇</div>
+        <div class="icon-opt" data-icon="●" onclick="selectStapleIcon(this)">●</div>
+      </div>
+    </div>
+
+    <div class="form-section-label">Nutrition per serving</div>
+    <div class="form-grid">
+      <div class="form-row"><label class="form-label">Calories (kcal)</label><input class="form-input" type="number" id="se-cals" placeholder="94"></div>
+      <div class="form-row"><label class="form-label">Protein (g)</label><input class="form-input" type="number" id="se-protein" placeholder="4"></div>
+      <div class="form-row"><label class="form-label">Carbs (g)</label><input class="form-input" type="number" id="se-carbs" placeholder="3"></div>
+      <div class="form-row"><label class="form-label">Fat (g)</label><input class="form-input" type="number" id="se-fat" placeholder="8"></div>
+      <div class="form-row"><label class="form-label">Fiber (g)</label><input class="form-input" type="number" id="se-fiber" placeholder="1"></div>
+      <div class="form-row"><label class="form-label">Sodium (mg)</label><input class="form-input" type="number" id="se-sodium" placeholder="73"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('staple-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStaple()">Save Staple</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW/EDIT CATEGORY MODAL -->
+<div class="modal-overlay" id="cat-modal">
+  <div class="modal" style="width:400px;">
+    <h3 id="cat-modal-title">New Category</h3>
+    <div class="form-row">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="cat-name-input" placeholder="e.g. Nut Butters">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Icon (optional)</label>
+      <div class="icon-picker" id="cat-icon-picker">
+        <div class="icon-opt selected" data-icon="◈" onclick="selectCatIcon(this)">◈</div>
+        <div class="icon-opt" data-icon="🥣" onclick="selectCatIcon(this)">🥣</div>
+        <div class="icon-opt" data-icon="🥜" onclick="selectCatIcon(this)">🥜</div>
+        <div class="icon-opt" data-icon="🍯" onclick="selectCatIcon(this)">🍯</div>
+        <div class="icon-opt" data-icon="🥗" onclick="selectCatIcon(this)">🥗</div>
+        <div class="icon-opt" data-icon="🍗" onclick="selectCatIcon(this)">🍗</div>
+        <div class="icon-opt" data-icon="🫐" onclick="selectCatIcon(this)">🫐</div>
+        <div class="icon-opt" data-icon="🥤" onclick="selectCatIcon(this)">🥤</div>
+        <div class="icon-opt" data-icon="🍫" onclick="selectCatIcon(this)">🍫</div>
+        <div class="icon-opt" data-icon="☕" onclick="selectCatIcon(this)">☕</div>
+        <div class="icon-opt" data-icon="🥚" onclick="selectCatIcon(this)">🥚</div>
+        <div class="icon-opt" data-icon="🌿" onclick="selectCatIcon(this)">🌿</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Colour</label>
+      <div class="color-swatches" id="cat-color-swatches">
+        <div class="color-swatch selected" data-color="#DDD9D0" style="background:#DDD9D0;" onclick="selectCatColor(this)"></div>
+        <div class="color-swatch" data-color="#D8F3DC" style="background:#D8F3DC;" onclick="selectCatColor(this)"></div>
+        <div class="color-swatch" data-color="#FFF0C0" style="background:#FFF0C0;" onclick="selectCatColor(this)"></div>
+        <div class="color-swatch" data-color="#FFE4E4" style="background:#FFE4E4;" onclick="selectCatColor(this)"></div>
+        <div class="color-swatch" data-color="#E4ECFF" style="background:#E4ECFF;" onclick="selectCatColor(this)"></div>
+        <div class="color-swatch" data-color="#F4E4FF" style="background:#F4E4FF;" onclick="selectCatColor(this)"></div>
+        <div class="color-swatch" data-color="#FFE8D6" style="background:#FFE8D6;" onclick="selectCatColor(this)"></div>
+        <div class="color-swatch" data-color="#E4FFF8" style="background:#E4FFF8;" onclick="selectCatColor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('cat-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCategory()">Save Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MEAL MODAL -->
+<div class="modal-overlay" id="add-meal-modal">
+  <div class="modal">
+    <h3>New Meal</h3>
+    <div class="form-row"><label class="form-label">Meal Name</label><input class="form-input" id="meal-name-input" placeholder="e.g. Breakfast, Snack"></div>
+    <div class="form-row"><label class="form-label">Time</label><input class="form-input" type="time" id="meal-time-input" value="08:00"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('add-meal-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addMeal()">Create Meal</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW/EDIT RECIPE MODAL -->
+<div class="modal-overlay" id="recipe-modal">
+  <div class="modal" style="width:520px;">
+    <h3 id="recipe-modal-title">New Recipe</h3>
+
+    <div class="form-grid" style="margin-bottom:4px;">
+      <div class="form-row" style="grid-column:1/-1;">
+        <label class="form-label">Recipe Name</label>
+        <input class="form-input" id="re-name" placeholder="e.g. Morning Protein Shake">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Category</label>
+        <select class="form-input" id="re-category" style="padding:8px 12px;"><option value="">— select —</option></select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Default servings</label>
+        <input class="form-input" type="number" id="re-servings" value="1" min="0.25" step="0.25" style="padding:8px 12px;">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">Icon</label>
+      <div class="icon-picker" id="re-icon-picker">
+        <div class="icon-opt selected" data-icon="🥤" onclick="selectRecipeIcon(this)">🥤</div>
+        <div class="icon-opt" data-icon="🥣" onclick="selectRecipeIcon(this)">🥣</div>
+        <div class="icon-opt" data-icon="🍳" onclick="selectRecipeIcon(this)">🍳</div>
+        <div class="icon-opt" data-icon="🥗" onclick="selectRecipeIcon(this)">🥗</div>
+        <div class="icon-opt" data-icon="🍱" onclick="selectRecipeIcon(this)">🍱</div>
+        <div class="icon-opt" data-icon="🫙" onclick="selectRecipeIcon(this)">🫙</div>
+        <div class="icon-opt" data-icon="🥞" onclick="selectRecipeIcon(this)">🥞</div>
+        <div class="icon-opt" data-icon="🍗" onclick="selectRecipeIcon(this)">🍗</div>
+        <div class="icon-opt" data-icon="🐟" onclick="selectRecipeIcon(this)">🐟</div>
+        <div class="icon-opt" data-icon="☕" onclick="selectRecipeIcon(this)">☕</div>
+        <div class="icon-opt" data-icon="🍫" onclick="selectRecipeIcon(this)">🍫</div>
+        <div class="icon-opt" data-icon="◈" onclick="selectRecipeIcon(this)">◈</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;">
+      <div class="form-section-label" style="margin:0;">Ingredients</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input class="search-input" id="re-ingredient-search" placeholder="Search staples…" oninput="renderIngredientPicker()" style="width:140px;padding:6px 10px;font-size:11px;">
+        <button class="btn btn-sm" onclick="openNewStapleFromRecipe()" title="Create a new staple and add it here" style="white-space:nowrap;">+ New Staple</button>
+      </div>
+    </div>
+
+    <!-- Ingredient picker -->
+    <div id="re-ingredient-picker" style="border:1px solid var(--border);border-radius:var(--radius);max-height:160px;overflow-y:auto;margin-bottom:10px;background:var(--surface);"></div>
+
+    <!-- Added ingredients -->
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:6px;">In this recipe</div>
+    <div id="re-ingredients-list" style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:4px;background:var(--surface);min-height:40px;">
+      <div id="re-ingredients-empty" style="padding:12px 14px;font-size:12px;color:var(--text3);">No ingredients added yet</div>
+    </div>
+    <div id="re-total-preview" style="font-size:11px;color:var(--text3);margin-bottom:4px;text-align:right;"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('recipe-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRecipe()">Save Recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECIPE SERVING MODAL -->
+<div class="modal-overlay" id="recipe-serving-modal">
+  <div class="modal">
+    <h3>Log Recipe</h3>
+    <div class="multiplier-preview">
+      <div class="prev-icon" id="rsm-icon">🥤</div>
+      <div>
+        <div class="prev-name" id="rsm-name">—</div>
+        <div class="prev-base" id="rsm-ingredients">—</div>
+      </div>
+    </div>
+    <label class="form-label">Scale (servings)</label>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="adjustRecipeQty(-0.5)">−</button>
+      <input class="qty-input" type="number" id="rsm-qty" value="1" min="0.25" step="0.25" oninput="updateRecipePreview()">
+      <button class="qty-btn" onclick="adjustRecipeQty(0.5)">+</button>
+    </div>
+    <div class="nutrition-preview" id="rsm-nutrition-preview"></div>
+    <div class="form-row" style="margin-top:8px;">
+      <label class="form-label">Add to meal</label>
+      <select class="form-input" id="rsm-meal-select" style="padding:8px 12px;"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('recipe-serving-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmLogRecipe()">Add to Meal</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════
+// PERSISTENCE HELPERS
+// ═══════════════════════════════════════════
+function load(key, def) { try { const v=localStorage.getItem(key); return v?JSON.parse(v):def; } catch(e){ return def; } }
+function persist(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+
+// ═══════════════════════════════════════════
+// DEFAULT DATA
+// ═══════════════════════════════════════════
+const DEFAULT_CATEGORIES = [
+  { id:'c1', name:'Breakfast',  icon:'🥣', color:'#FFF0C0' },
+  { id:'c2', name:'Proteins',   icon:'🍗', color:'#FFE4E4' },
+  { id:'c3', name:'Nut Butters',icon:'🥜', color:'#FFE8D6' },
+  { id:'c4', name:'Condiments', icon:'🍯', color:'#D8F3DC' },
+  { id:'c5', name:'Fruit',      icon:'🫐', color:'#E4FFF8' },
+  { id:'c6', name:'Grains',     icon:'🌿', color:'#E4ECFF' },
+  { id:'c7', name:'Snacks',     icon:'🍫', color:'#F4E4FF' },
+  { id:'c8', name:'Drinks',     icon:'🥤', color:'#DDD9D0' },
+];
+
+const DEFAULT_STAPLES = [
+  { id:'s1',  name:'Oat pancake',          icon:'🥞', categoryId:'c1', serving:'1 pancake (80g)',     cals:180, protein:8,  carbs:24, fat:5,  fiber:3, sodium:90  },
+  { id:'s2',  name:'Peanut butter (smooth)',icon:'🥜', categoryId:'c3', serving:'1 tbsp (15g)',         cals:94,  protein:4,  carbs:3,  fat:8,  fiber:1, sodium:73  },
+  { id:'s3',  name:'Peanut butter (crunchy)',icon:'🥜',categoryId:'c3', serving:'1 tbsp (15g)',         cals:96,  protein:4,  carbs:3,  fat:8,  fiber:1, sodium:65  },
+  { id:'s4',  name:'Honey',                icon:'🍯', categoryId:'c4', serving:'1 tsp (7g)',            cals:21,  protein:0,  carbs:6,  fat:0,  fiber:0, sodium:0   },
+  { id:'s5',  name:'Greek yogurt',         icon:'🥛', categoryId:'c1', serving:'170g pot',              cals:100, protein:17, carbs:6,  fat:0,  fiber:0, sodium:65  },
+  { id:'s6',  name:'Blueberries',          icon:'🫐', categoryId:'c5', serving:'handful (80g)',         cals:46,  protein:1,  carbs:11, fat:0,  fiber:2, sodium:1   },
+  { id:'s7',  name:'Whole egg',            icon:'🥚', categoryId:'c2', serving:'1 large egg (60g)',     cals:78,  protein:6,  carbs:1,  fat:5,  fiber:0, sodium:62  },
+  { id:'s8',  name:'Almonds',             icon:'🥜', categoryId:'c7', serving:'small handful (25g)',   cals:148, protein:5,  carbs:3,  fat:13, fiber:2, sodium:0   },
+  { id:'s9',  name:'Banana',              icon:'🍌', categoryId:'c5', serving:'1 medium (120g)',       cals:107, protein:1,  carbs:27, fat:0,  fiber:3, sodium:1   },
+  { id:'s10', name:'Whey protein',        icon:'🥤', categoryId:'c2', serving:'1 scoop (30g)',         cals:120, protein:24, carbs:3,  fat:2,  fiber:0, sodium:130 },
+  { id:'s11', name:'Sourdough slice',     icon:'🍞', categoryId:'c6', serving:'1 slice (45g)',         cals:110, protein:4,  carbs:21, fat:1,  fiber:1, sodium:200 },
+  { id:'s12', name:'Almond milk',         icon:'🥛', categoryId:'c8', serving:'200ml',                 cals:26,  protein:1,  carbs:3,  fat:1,  fiber:0, sodium:80  },
+  { id:'s13', name:'Flaxseed',            icon:'🫘', categoryId:'c4', serving:'1 tbsp (10g)',           cals:55,  protein:2,  carbs:3,  fat:4,  fiber:3, sodium:3   },
+];
+
+const DEFAULT_RECIPES = [
+  {
+    id:'r1', name:'Morning Protein Shake', icon:'🥤', categoryId:'c2',
+    ingredients:[
+      { stapleId:'s10', qty:1   },  // whey protein
+      { stapleId:'s6',  qty:1   },  // blueberries
+      { stapleId:'s9',  qty:1   },  // banana
+      { stapleId:'s12', qty:1   },  // almond milk
+      { stapleId:'s13', qty:1   },  // flaxseed
+      { stapleId:'s2',  qty:1   },  // peanut butter (smooth)
+    ]
+  },
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const state = {
+  currentPage: 'dashboard',
+  meals: [
+    { id:1, name:'Breakfast', icon:'☀️', time:'07:30', items:[
+      { name:'Oat pancake', portion:'1 pancake (80g)', cals:180, protein:8, carbs:24, fat:5, fiber:3, sodium:90 },
+      { name:'Greek yogurt', portion:'170g pot', cals:100, protein:17, carbs:6, fat:0, fiber:0, sodium:65 },
+      { name:'Blueberries', portion:'handful (80g)', cals:46, protein:1, carbs:11, fat:0, fiber:2, sodium:1 },
+    ]},
+    { id:2, name:'Snack', icon:'◇', time:'10:30', items:[
+      { name:'Banana', portion:'1 medium', cals:107, protein:1, carbs:27, fat:0, fiber:3, sodium:1 },
+      { name:'Peanut butter (smooth)', portion:'1 tbsp', cals:94, protein:4, carbs:3, fat:8, fiber:1, sodium:73 },
+      { name:'Honey', portion:'1 tsp', cals:21, protein:0, carbs:6, fat:0, fiber:0, sodium:0 },
+    ]},
+  ],
+  categories: load('nutrilog-categories', DEFAULT_CATEGORIES),
+  staples:    load('nutrilog-staples',    DEFAULT_STAPLES),
+  recipes:    load('nutrilog-recipes',    DEFAULT_RECIPES),
+  goals: { calories:2000, proteinMin:70, proteinMax:85, fiberMin:30, fiberMax:35, sodium:2000 },
+  scannedData: null,
+  weeklyData: [1580, 1920, 1720, 2050, 1650, 1890, 548],
+  // modal state
+  _servingStaple: null,
+  _stapleEditId: null,
+  _stapleSelectedIcon: '🥣',
+  _catEditId: null,
+  _catSelectedIcon: '◈',
+  _catSelectedColor: '#DDD9D0',
+  _activeCat: 'all',
+  _recipeEditId: null,
+  _recipeSelectedIcon: '🥤',
+  _recipeIngredients: [],   // [{ stapleId, qty }]
+  _servingRecipe: null,
+  _stapleFromRecipe: false,
+};
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function getCat(id) { return state.categories.find(c=>c.id===id); }
+function getCatName(id) { const c=getCat(id); return c?c.name:'Uncategorised'; }
+function getCatColor(id) { const c=getCat(id); return c?c.color:'#DDD9D0'; }
+function getCatIcon(id) { const c=getCat(id); return c?c.icon:'◈'; }
+function stapleCount(catId) { return state.staples.filter(s=>s.categoryId===catId).length; }
+
+// ═══════════════════════════════════════════
+// TODAY'S LOG
+// ═══════════════════════════════════════════
+let _qilMealId = null, _qilItemIdx = null, _qilBaseItem = null;
+
+// track which meal groups are collapsed by meal id
+const _logCollapsed = new Set();
+// track which recipe log entries are expanded
+const _recipeLogExpanded = new Set();
+
+function toggleRecipeLogEntry(key) {
+  if (_recipeLogExpanded.has(key)) _recipeLogExpanded.delete(key);
+  else _recipeLogExpanded.add(key);
+  renderTodaysLog();
+}
+
+function renderTodaysLog() {
+  const body = document.getElementById('todays-log-body');
+  const countEl = document.getElementById('log-item-count');
+  const toggleBtn = document.getElementById('log-toggle-all-btn');
+  const mealsWithItems = state.meals.filter(m => m.items.length > 0);
+  const totalItems = mealsWithItems.reduce((s,m) => s + m.items.length, 0);
+  countEl.textContent = totalItems + ' item' + (totalItems !== 1 ? 's' : '');
+
+  if (!totalItems) {
+    body.innerHTML = '<div class="log-empty">Nothing logged yet — add a meal or tap a staple.</div>';
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    return;
+  }
+  if (toggleBtn) toggleBtn.style.display = '';
+
+  // update toggle-all button label
+  const allCollapsed = mealsWithItems.every(m => _logCollapsed.has(m.id));
+  if (toggleBtn) toggleBtn.textContent = allCollapsed ? 'expand all' : 'collapse all';
+
+  body.innerHTML = mealsWithItems.map(meal => {
+    const mealCals = meal.items.reduce((s,i) => s + i.cals, 0);
+    const isCollapsed = _logCollapsed.has(meal.id);
+    const rows = meal.items.map((item, idx) => {
+      if (item._isRecipe) {
+        const entryKey = `${meal.id}-${idx}`;
+        const isOpen = _recipeLogExpanded.has(entryKey);
+        const ingRows = (item._recipeIngredients || []).map(ing =>
+          `<div class="log-recipe-item">
+            <div><span style="margin-right:6px;">${ing.icon||'◇'}</span><span class="log-recipe-item-name">${ing.name}</span> <span class="log-recipe-item-portion">${ing.portion}</span></div>
+            <div class="log-recipe-item-macros"><span>${ing.cals} kcal</span><span>P ${ing.protein}g</span><span>F ${ing.fiber}g</span></div>
+          </div>`).join('');
+        return `<div class="log-recipe-entry">
+          <div class="log-recipe-header" onclick="toggleRecipeLogEntry('${entryKey}')">
+            <div class="log-recipe-title">
+              <span class="log-recipe-icon">${item._recipeIcon||'⬡'}</span>
+              <span class="log-recipe-name">${item.name}</span>
+            </div>
+            <div class="log-recipe-right">
+              <span class="log-macro" style="font-size:11px;">P ${item.protein}g</span>
+              <span class="log-macro" style="font-size:11px;">F ${item.fiber}g</span>
+              <span class="log-recipe-cals">${item.cals} kcal</span>
+              <span class="log-recipe-chevron ${isOpen?'open':''}">▾</span>
+              <button class="log-item-remove" onclick="event.stopPropagation();openQtyInline(${meal.id},${idx})" title="Remove">✕</button>
+            </div>
+          </div>
+          <div class="log-recipe-items ${isOpen?'open':''}" id="rle-${entryKey}">${ingRows}</div>
+        </div>`;
+      }
+      return `<div class="log-item">
+        <div class="log-item-left">
+          <div class="log-item-name">${item.name}</div>
+          <div class="log-item-portion">${item.portion}</div>
+        </div>
+        <div class="log-item-macros">
+          <span class="log-macro">P ${item.protein}g</span>
+          <span class="log-macro">F ${item.fiber}g</span>
+          <span class="log-kcal">${item.cals} kcal</span>
+        </div>
+        <button class="log-item-remove" onclick="openQtyInline(${meal.id}, ${idx})" title="Adjust or remove">✕</button>
+      </div>`;
+    }).join('');
+
+    return `<div class="log-meal-group">
+      <div class="log-meal-label" onclick="toggleLogGroup(${meal.id})">
+        <div class="log-meal-label-name">
+          <span>${meal.icon}</span>
+          <span>${meal.name}</span>
+        </div>
+        <div class="log-meal-label-right">
+          <span class="log-meal-kcal">${mealCals} kcal · ${meal.time}</span>
+          <span class="log-chevron ${isCollapsed ? 'collapsed' : ''}">▾</span>
+        </div>
+      </div>
+      <div class="log-group-items ${isCollapsed ? 'collapsed' : ''}" id="log-group-${meal.id}">
+        ${rows}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleLogGroup(mealId) {
+  if (_logCollapsed.has(mealId)) _logCollapsed.delete(mealId);
+  else _logCollapsed.add(mealId);
+  renderTodaysLog();
+}
+
+function toggleAllLogGroups() {
+  const mealsWithItems = state.meals.filter(m => m.items.length > 0);
+  const allCollapsed = mealsWithItems.every(m => _logCollapsed.has(m.id));
+  if (allCollapsed) {
+    mealsWithItems.forEach(m => _logCollapsed.delete(m.id));
+  } else {
+    mealsWithItems.forEach(m => _logCollapsed.add(m.id));
+  }
+  renderTodaysLog();
+}
+
+function openQtyInline(mealId, idx) {
+  const meal = state.meals.find(m => m.id === mealId);
+  if (!meal) return;
+  const item = meal.items[idx];
+  _qilMealId = mealId; _qilItemIdx = idx; _qilBaseItem = {...item};
+  document.getElementById('qil-name').textContent = item.name;
+  document.getElementById('qil-portion').textContent = 'Base: ' + item.portion;
+  document.getElementById('qil-qty').value = 1;
+  updateQilPreview();
+  document.getElementById('qty-inline-modal').classList.add('open');
+}
+
+function adjustLogQty(d) {
+  const inp = document.getElementById('qil-qty');
+  inp.value = Math.max(0.25, Math.round((parseFloat(inp.value||1) + d) * 4) / 4);
+  updateQilPreview();
+}
+
+function updateQilPreview() {
+  const q = parseFloat(document.getElementById('qil-qty').value) || 1;
+  const b = _qilBaseItem; if (!b) return;
+  const cals = Math.round(b.cals * q);
+  const prot = Math.round(b.protein * q * 10) / 10;
+  const fib  = Math.round(b.fiber * q * 10) / 10;
+  document.getElementById('qil-preview').textContent =
+    q === 1 ? '' : `× ${q} → ${cals} kcal · P ${prot}g · Fiber ${fib}g`;
+}
+
+function confirmLogQty() {
+  const q = parseFloat(document.getElementById('qil-qty').value) || 1;
+  const meal = state.meals.find(m => m.id === _qilMealId); if (!meal) return;
+  const b = _qilBaseItem;
+  meal.items[_qilItemIdx] = {
+    ...b,
+    portion: q === 1 ? b.portion : `${q}× ${b.portion}`,
+    cals:    Math.round(b.cals * q),
+    protein: Math.round(b.protein * q * 10) / 10,
+    carbs:   Math.round(b.carbs * q * 10) / 10,
+    fat:     Math.round(b.fat * q * 10) / 10,
+    fiber:   Math.round(b.fiber * q * 10) / 10,
+    sodium:  Math.round(b.sodium * q),
+  };
+  closeQtyInline();
+  renderDashboard();
+  if (state.currentPage === 'meals') renderMeals();
+}
+
+function confirmLogRemove() {
+  const meal = state.meals.find(m => m.id === _qilMealId); if (!meal) return;
+  meal.items.splice(_qilItemIdx, 1);
+  closeQtyInline();
+  renderDashboard();
+  if (state.currentPage === 'meals') renderMeals();
+}
+
+function closeQtyInline() {
+  document.getElementById('qty-inline-modal').classList.remove('open');
+  _qilMealId = null; _qilItemIdx = null; _qilBaseItem = null;
+}
+
+function getTotals() {
+  return state.meals.reduce((t,meal)=>{
+    meal.items.forEach(i=>{t.cals+=i.cals;t.protein+=i.protein;t.carbs+=i.carbs;t.fat+=i.fat;t.fiber+=i.fiber;t.sodium+=i.sodium;});
+    return t;
+  },{cals:0,protein:0,carbs:0,fat:0,fiber:0,sodium:0});
+}
+
+function scaleN(s, q) {
+  return {
+    cals:    Math.round(s.cals*q),
+    protein: Math.round(s.protein*q*10)/10,
+    carbs:   Math.round(s.carbs*q*10)/10,
+    fat:     Math.round(s.fat*q*10)/10,
+    fiber:   Math.round(s.fiber*q*10)/10,
+    sodium:  Math.round(s.sodium*q),
+  };
+}
+
+function barCls(s){ return s==='green'?'fill-green':s==='amber'?'fill-amber':'fill-red'; }
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+const NAV_LABELS = {dashboard:'Dashboard',meals:'Log Meals',scan:'Scan',staples:'Staples',recipes:'Recipes',categories:'Categories',weekly:'Weekly',monthly:'Monthly',goals:'Goals'};
+const BN_IDS = {dashboard:'bn-dashboard',meals:'bn-meals',staples:'bn-staples',recipes:'bn-recipes',goals:'bn-goals'};
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item,.bottom-nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const lbl = NAV_LABELS[id]||'';
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.textContent.includes(lbl)) n.classList.add('active'); });
+  const bn = document.getElementById(BN_IDS[id]);
+  if(bn) bn.classList.add('active');
+  state.currentPage = id;
+  if(id==='dashboard')   renderDashboard();
+  if(id==='meals')       { renderMeals(); renderStaplesStrip(); }
+  if(id==='staples')     renderStaples();
+  if(id==='recipes')     renderRecipes();
+  if(id==='categories')  renderCategories();
+  if(id==='weekly')      renderWeekly();
+}
+
+function mobilePrimaryAction(){ showPage(state.currentPage==='meals'?'meals':'meals'); openAddMealModal(); }
+
+// ═══════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════
+const NUTRITION_ROWS = [
+  {key:'calories',label:'Calories',   fmt:v=>v+' kcal', goal:()=>'~2,000 kcal', status:(v,g)=>v<g.calories*.9?'amber':v<=g.calories?'green':'red'},
+  {key:'protein', label:'Protein',    fmt:v=>v+' g',    goal:()=>`${state.goals.proteinMin}–${state.goals.proteinMax} g`, status:(v,g)=>v<g.proteinMin?'amber':v<=g.proteinMax?'green':'amber'},
+  {key:'fiber',   label:'Fiber',      fmt:v=>v+' g',    goal:()=>`${state.goals.fiberMin}–${state.goals.fiberMax} g`,     status:(v,g)=>v<g.fiberMin?'amber':v<=g.fiberMax?'green':'amber'},
+  {key:'sodium',  label:'Sodium',     fmt:v=>v+' mg',   goal:()=>'≤2,000 mg',   status:(v,g)=>v<=g.sodium?'green':'red'},
+  {key:'fat',     label:'Total Fat',  fmt:v=>v+' g',    goal:()=>'Info only',   status:()=>'green'},
+  {key:null,label:'Saturated Fat',    static:'—', goal:()=>'Keep low',  status:()=>'green'},
+  {key:null,label:'Added Sugar',      static:'—', goal:()=>'≤25 g',     status:()=>'green'},
+  {key:null,label:'Carb Quality',     static:'Good overall quality', goal:()=>'Favor high fiber', status:()=>'green'},
+  {key:null,label:'Glycemic Load',    static:'Moderate', goal:()=>'Keep moderate/lower', status:()=>'green'},
+];
+const DOT={green:'dot-green',amber:'dot-amber',red:'dot-red'};
+
+function renderDashboard() {
+  const t=getTotals(); const g=state.goals;
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  function setBar(prefix, val, max, getStatus) {
+    const pct = Math.min(100, Math.round(val/max*100));
+    const status = getStatus(val,g);
+    const bar = document.getElementById(prefix+'-bar');
+    bar.className = 'progress-fill '+barCls(status);
+    bar.style.width = pct+'%';
+  }
+  document.getElementById('dash-cals').textContent = t.cals;
+  setBar('dash-cals',    t.cals,    g.calories,  (v,g)=>v<g.calories*.9?'amber':v<=g.calories?'green':'red');
+  document.getElementById('dash-protein').innerHTML = t.protein+'<span style="font-size:14px;color:var(--text3)">g</span>';
+  setBar('dash-protein', t.protein, g.proteinMax,(v,g)=>v<g.proteinMin?'amber':v<=g.proteinMax?'green':'amber');
+  document.getElementById('dash-fiber').innerHTML = t.fiber+'<span style="font-size:14px;color:var(--text3)">g</span>';
+  setBar('dash-fiber',   t.fiber,   g.fiberMax,  (v,g)=>v<g.fiberMin?'amber':v<=g.fiberMax?'green':'amber');
+  document.getElementById('dash-sodium').innerHTML = t.sodium+'<span style="font-size:14px;color:var(--text3)">mg</span>';
+  setBar('dash-sodium',  t.sodium,  g.sodium,    (v,g)=>v<=g.sodium?'green':'red');
+
+  document.getElementById('nutrition-table-body').innerHTML = NUTRITION_ROWS.map(row=>{
+    const val = row.static!==undefined ? row.static : (row.key ? row.fmt(t[row.key]) : '—');
+    const s = row.status(t[row.key]||0, g);
+    return `<tr><td>${row.label}</td><td>${val}</td><td>${row.goal()}</td><td><span class="status-dot ${DOT[s]}"></span></td></tr>`;
+  }).join('');
+  renderTodaysLog();
+}
+
+// ═══════════════════════════════════════════
+// MEALS
+// ═══════════════════════════════════════════
+function renderMeals() {
+  const el = document.getElementById('meals-list');
+  if(!state.meals.length){
+    el.innerHTML=`<div class="empty-state"><div class="es-icon">◉</div><p>No meals yet.<br>Create a meal or tap a staple above.</p><button class="btn btn-primary" onclick="openAddMealModal()">+ New Meal</button></div>`;
+    return;
+  }
+  el.innerHTML = state.meals.map(meal=>{
+    const t=meal.items.reduce((a,i)=>({cals:a.cals+i.cals,protein:a.protein+i.protein,fat:a.fat+i.fat,fiber:a.fiber+i.fiber}),{cals:0,protein:0,fat:0,fiber:0});
+    return `<div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(${meal.id})">
+        <div class="meal-title">
+          <div class="meal-icon">${meal.icon}</div>
+          <div><div class="meal-name">${meal.name}</div><div class="meal-cals">${t.cals} kcal · ${meal.time}</div></div>
+        </div>
+        <div class="meal-macros"><span>P: ${t.protein}g</span><span>F: ${t.fat}g</span><span>Fiber: ${t.fiber}g</span></div>
+      </div>
+      <div class="meal-body" id="meal-body-${meal.id}">
+        ${meal.items.map((item,idx)=>`
+          <div class="food-item">
+            <div><div class="food-item-name">${item.name}</div><div class="food-item-portion">${item.portion}</div></div>
+            <div class="food-item-macros">
+              <span>${item.cals} kcal</span><span>P ${item.protein}g</span><span>C ${item.carbs}g</span><span>F ${item.fat}g</span>
+              <span style="cursor:pointer;color:var(--red);" onclick="event.stopPropagation();removeItem(${meal.id},${idx})">✕</span>
+            </div>
+          </div>`).join('')}
+        <div class="add-food-row">
+          <input class="form-input" style="flex:1;min-width:120px;" id="food-input-${meal.id}" placeholder="Quick add item…" onkeydown="if(event.key==='Enter')quickAdd(${meal.id})">
+          <button class="btn btn-sm" onclick="quickAdd(${meal.id})">+ Add</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMeal(id){ document.getElementById('meal-body-'+id).classList.toggle('open'); }
+
+function removeItem(mealId, idx){
+  const m=state.meals.find(m=>m.id===mealId);
+  if(m){ m.items.splice(idx,1); renderMeals(); renderDashboard(); }
+}
+
+function quickAdd(mealId){
+  const inp=document.getElementById('food-input-'+mealId);
+  const val=inp.value.trim(); if(!val) return;
+  state.meals.find(m=>m.id===mealId)?.items.push({name:val,portion:'1 serving',cals:0,protein:0,carbs:0,fat:0,fiber:0,sodium:0});
+  inp.value=''; renderMeals(); renderDashboard();
+  document.getElementById('meal-body-'+mealId)?.classList.add('open');
+}
+
+// ═══════════════════════════════════════════
+// STAPLES STRIP
+// ═══════════════════════════════════════════
+function renderStaplesStrip(){
+  const strip=document.getElementById('staples-strip');
+  const wrap=document.getElementById('staples-strip-wrap');
+  const hasContent = state.staples.length || state.recipes.length;
+  if(!hasContent){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+
+  const stapleChips = state.staples.map(s=>
+    `<div class="staple-chip" onclick="openServingModal('${s.id}')">
+      <span>${s.icon}</span>
+      <span>${s.name}</span>
+      <span class="chip-cals">${s.cals}</span>
+    </div>`
+  ).join('');
+
+  const recipeChips = state.recipes.map(r=>{
+    const tot = recipeNutritionTotals(r);
+    return `<div class="recipe-chip" onclick="openRecipeServingModal('${r.id}')">
+      <span>${r.icon}</span>
+      <span>${r.name}</span>
+      <span class="chip-cals">${tot.cals} kcal</span>
+    </div>`;
+  }).join('');
+
+  strip.innerHTML = recipeChips + (recipeChips && stapleChips ? '<div style="width:1px;background:var(--border);flex-shrink:0;margin:4px 4px;"></div>' : '') + stapleChips;
+}
+
+// ═══════════════════════════════════════════
+// SERVING MODAL
+// ═══════════════════════════════════════════
+function openServingModal(stapleId){
+  const s=state.staples.find(x=>x.id===stapleId); if(!s) return;
+  state._servingStaple=s;
+  document.getElementById('smp-icon').textContent=s.icon;
+  document.getElementById('smp-name').textContent=s.name;
+  document.getElementById('smp-base').textContent='Per serving: '+s.serving;
+  document.getElementById('qty-input').value='1';
+  const sel=document.getElementById('target-meal-select');
+  sel.innerHTML = state.meals.map(m=>`<option value="${m.id}">${m.name} (${m.time})</option>`).join('');
+  if(!state.meals.length) sel.innerHTML='<option value="">— create a meal first —</option>';
+  updateNutritionPreview();
+  document.getElementById('serving-modal').classList.add('open');
+}
+
+function adjustQty(d){
+  const inp=document.getElementById('qty-input');
+  inp.value = Math.max(0.25, Math.round((parseFloat(inp.value||1)+d)*4)/4);
+  updateNutritionPreview();
+}
+
+function updateNutritionPreview(){
+  const s=state._servingStaple; if(!s) return;
+  const q=parseFloat(document.getElementById('qty-input').value)||1;
+  const n=scaleN(s,q);
+  document.getElementById('nutrition-preview').innerHTML=`
+    <div class="np-row"><span>Calories</span><span>${n.cals} kcal</span></div>
+    <div class="np-row"><span>Protein</span><span>${n.protein}g</span></div>
+    <div class="np-row"><span>Carbs</span><span>${n.carbs}g</span></div>
+    <div class="np-row"><span>Fat</span><span>${n.fat}g</span></div>
+    <div class="np-row"><span>Fiber</span><span>${n.fiber}g</span></div>
+    <div class="np-row"><span>Sodium</span><span>${n.sodium}mg</span></div>`;
+}
+
+function confirmAddStaple(){
+  const s=state._servingStaple; if(!s) return;
+  const q=parseFloat(document.getElementById('qty-input').value)||1;
+  const mealId=parseInt(document.getElementById('target-meal-select').value);
+  let meal=state.meals.find(m=>m.id===mealId);
+  if(!meal){
+    meal={id:Date.now(),name:'Meal',icon:'◈',time:new Date().toTimeString().slice(0,5),items:[]};
+    state.meals.push(meal);
+  }
+  const n=scaleN(s,q);
+  meal.items.push({name:s.name, portion:q===1?s.serving:`${q}× ${s.serving}`, cals:n.cals,protein:n.protein,carbs:n.carbs,fat:n.fat,fiber:n.fiber,sodium:n.sodium});
+  closeModal('serving-modal');
+  renderMeals(); renderDashboard(); renderStaplesStrip();
+  setTimeout(()=>document.getElementById('meal-body-'+meal.id)?.classList.add('open'),40);
+}
+
+// ═══════════════════════════════════════════
+// STAPLES PAGE
+// ═══════════════════════════════════════════
+function renderStaples(){
+  // Category filter pills
+  const cats = state.categories;
+  document.getElementById('staples-cat-filters').innerHTML =
+    `<div class="cat-pill ${state._activeCat==='all'?'active':''}" onclick="setCat('all')">All</div>`+
+    cats.map(c=>{
+      const count=stapleCount(c.id);
+      return `<div class="cat-pill ${state._activeCat===c.id?'active':''}" onclick="setCat('${c.id}')" style="${state._activeCat===c.id?'':''}">
+        ${c.icon} ${c.name} <span style="opacity:.6">${count}</span>
+      </div>`;
+    }).join('');
+
+  const q=(document.getElementById('staples-search')?.value||'').toLowerCase();
+  const filtered=state.staples.filter(s=>{
+    const matchCat = state._activeCat==='all' || s.categoryId===state._activeCat;
+    const matchQ   = !q || s.name.toLowerCase().includes(q);
+    return matchCat && matchQ;
+  });
+
+  const wrap=document.getElementById('staples-list-wrap');
+  if(!filtered.length){
+    wrap.innerHTML=`<div class="empty-state"><div class="es-icon">★</div><p>${state.staples.length?'No staples match this filter.':'Add your first staple to get started.'}</p></div>`;
+    return;
+  }
+  wrap.innerHTML=`<div class="staples-list">${filtered.map(s=>{
+    const catColor=getCatColor(s.categoryId);
+    const catName=getCatName(s.categoryId);
+    return `<div class="staple-row">
+      <div class="staple-row-left">
+        <div class="staple-emoji">${s.icon}</div>
+        <div>
+          <div class="staple-row-name">${s.name}</div>
+          <div class="staple-row-meta">${s.serving} · P ${s.protein}g · Fiber ${s.fiber}g</div>
+        </div>
+      </div>
+      <div class="staple-row-right">
+        <div class="staple-row-cals">${s.cals} kcal</div>
+        <span class="cat-badge" style="background:${catColor}">${catName}</span>
+        <button class="btn btn-sm" onclick="openEditStapleModal('${s.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStaple('${s.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function setCat(id){ state._activeCat=id; renderStaples(); }
+
+function deleteStaple(id){
+  if(!confirm('Delete this staple?')) return;
+  state.staples=state.staples.filter(s=>s.id!==id);
+  persist('nutrilog-staples',state.staples);
+  renderStaples(); renderStaplesStrip();
+}
+
+// ═══════════════════════════════════════════
+// STAPLE MODAL
+// ═══════════════════════════════════════════
+function populateCategorySelect(){
+  const sel=document.getElementById('se-category');
+  sel.innerHTML='<option value="">— select category —</option>'+
+    state.categories.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+}
+
+function openNewStapleModal(prefill){
+  state._stapleEditId=null;
+  state._stapleSelectedIcon=prefill?.icon||'🥣';
+  document.getElementById('staple-modal-title').textContent='New Staple';
+  populateCategorySelect();
+  ['se-name','se-serving','se-cals','se-protein','se-carbs','se-fat','se-fiber','se-sodium'].forEach(id=>{
+    document.getElementById(id).value = prefill?.[id.replace('se-','')]||'';
+  });
+  if(prefill?.name)    document.getElementById('se-name').value=prefill.name;
+  if(prefill?.serving) document.getElementById('se-serving').value=prefill.serving;
+  if(prefill?.cals)    document.getElementById('se-cals').value=prefill.cals;
+  if(prefill?.protein) document.getElementById('se-protein').value=prefill.protein;
+  if(prefill?.carbs)   document.getElementById('se-carbs').value=prefill.carbs;
+  if(prefill?.fat)     document.getElementById('se-fat').value=prefill.fat;
+  if(prefill?.fiber)   document.getElementById('se-fiber').value=prefill.fiber;
+  if(prefill?.sodium)  document.getElementById('se-sodium').value=prefill.sodium;
+  // reset scan UI
+  document.getElementById('staple-scan-preview').style.display='none';
+  document.getElementById('staple-scan-status').style.display='none';
+  document.getElementById('staple-scan-ok').style.display='none';
+  document.getElementById('staple-scan-file').value='';
+  syncStapleIconPicker();
+  document.getElementById('staple-modal').classList.add('open');
+}
+
+function openEditStapleModal(id){
+  const s=state.staples.find(x=>x.id===id); if(!s) return;
+  state._stapleEditId=id;
+  state._stapleSelectedIcon=s.icon;
+  document.getElementById('staple-modal-title').textContent='Edit Staple';
+  populateCategorySelect();
+  document.getElementById('se-name').value=s.name;
+  document.getElementById('se-category').value=s.categoryId||'';
+  document.getElementById('se-serving').value=s.serving;
+  document.getElementById('se-cals').value=s.cals;
+  document.getElementById('se-protein').value=s.protein;
+  document.getElementById('se-carbs').value=s.carbs;
+  document.getElementById('se-fat').value=s.fat;
+  document.getElementById('se-fiber').value=s.fiber;
+  document.getElementById('se-sodium').value=s.sodium;
+  document.getElementById('staple-scan-preview').style.display='none';
+  document.getElementById('staple-scan-status').style.display='none';
+  document.getElementById('staple-scan-ok').style.display='none';
+  syncStapleIconPicker();
+  document.getElementById('staple-modal').classList.add('open');
+}
+
+function syncStapleIconPicker(){
+  document.querySelectorAll('#se-icon-picker .icon-opt').forEach(el=>
+    el.classList.toggle('selected', el.dataset.icon===state._stapleSelectedIcon));
+}
+
+function selectStapleIcon(el){
+  document.querySelectorAll('#se-icon-picker .icon-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  state._stapleSelectedIcon=el.dataset.icon;
+}
+
+function saveStaple(){
+  const name=document.getElementById('se-name').value.trim();
+  if(!name){ document.getElementById('se-name').focus(); return; }
+  const staple={
+    id: state._stapleEditId||('s'+Date.now()),
+    name,
+    icon:       state._stapleSelectedIcon,
+    categoryId: document.getElementById('se-category').value||null,
+    serving:    document.getElementById('se-serving').value.trim()||'1 serving',
+    cals:       parseFloat(document.getElementById('se-cals').value)||0,
+    protein:    parseFloat(document.getElementById('se-protein').value)||0,
+    carbs:      parseFloat(document.getElementById('se-carbs').value)||0,
+    fat:        parseFloat(document.getElementById('se-fat').value)||0,
+    fiber:      parseFloat(document.getElementById('se-fiber').value)||0,
+    sodium:     parseFloat(document.getElementById('se-sodium').value)||0,
+  };
+  if(state._stapleEditId){
+    const idx=state.staples.findIndex(s=>s.id===state._stapleEditId);
+    if(idx>=0) state.staples[idx]=staple;
+  } else {
+    state.staples.push(staple);
+  }
+  persist('nutrilog-staples',state.staples);
+  closeModal('staple-modal');
+
+  // If opened from within the recipe modal, return there and auto-add the new staple
+  if(state._stapleFromRecipe) {
+    state._stapleFromRecipe = false;
+    document.getElementById('recipe-modal').classList.add('open');
+    if(!state._stapleEditId) addRecipeIngredient(staple.id);
+    renderIngredientPicker();
+    renderRecipeIngredientsList();
+  } else {
+    renderStaples();
+  }
+  renderStaplesStrip();
+}
+
+function openNewStapleFromRecipe(){
+  state._stapleFromRecipe = true;
+  // close recipe modal temporarily, open staple modal
+  document.getElementById('recipe-modal').classList.remove('open');
+  openNewStapleModal();
+}
+
+// ═══════════════════════════════════════════
+// INLINE SCAN (inside staple modal)
+// ═══════════════════════════════════════════
+function handleStapleScan(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=document.getElementById('staple-scan-img');
+    img.src=e.target.result;
+    document.getElementById('staple-scan-preview').style.display='block';
+    document.getElementById('staple-scan-status').style.display='block';
+    document.getElementById('staple-scan-ok').style.display='none';
+    // Simulate extraction (replace with real Claude API vision call)
+    setTimeout(()=>prefillFromScan({
+      name:'Peanut Butter (Natural)', serving:'2 tbsp (32g)',
+      cals:190, protein:7, carbs:7, fat:16, fiber:2, sodium:105
+    }), 1800);
+  };
+  reader.readAsDataURL(file);
+}
+
+function prefillFromScan(data){
+  document.getElementById('staple-scan-status').style.display='none';
+  document.getElementById('staple-scan-ok').style.display='block';
+  if(data.name)    document.getElementById('se-name').value=data.name;
+  if(data.serving) document.getElementById('se-serving').value=data.serving;
+  if(data.cals)    document.getElementById('se-cals').value=data.cals;
+  if(data.protein) document.getElementById('se-protein').value=data.protein;
+  if(data.carbs)   document.getElementById('se-carbs').value=data.carbs;
+  if(data.fat)     document.getElementById('se-fat').value=data.fat;
+  if(data.fiber)   document.getElementById('se-fiber').value=data.fiber;
+  if(data.sodium)  document.getElementById('se-sodium').value=data.sodium;
+}
+
+// ═══════════════════════════════════════════
+// CATEGORIES PAGE
+// ═══════════════════════════════════════════
+function renderCategories(){
+  const wrap=document.getElementById('categories-list-wrap');
+  if(!state.categories.length){
+    wrap.innerHTML=`<div class="empty-state"><div class="es-icon">⊞</div><p>No categories yet.</p><button class="btn btn-primary" onclick="openNewCatModal()">+ Create First Category</button></div>`;
+    return;
+  }
+  wrap.innerHTML=`<div class="categories-list">${state.categories.map(c=>{
+    const count=stapleCount(c.id);
+    return `<div>
+      <div class="cat-row">
+        <div class="cat-row-icon">${c.icon}</div>
+        <div style="width:14px;height:14px;border-radius:50%;background:${c.color};flex-shrink:0;border:1px solid rgba(0,0,0,.1);"></div>
+        <div class="cat-row-info">
+          <div class="cat-row-name">${c.name}</div>
+          <div class="cat-row-count">${count} staple${count!==1?'s':''}</div>
+        </div>
+        <div class="cat-row-actions">
+          <button class="btn btn-sm" onclick="openEditCatModal('${c.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCategory('${c.id}')"  ${count>0?`title="Will unassign ${count} staple(s)"`:''}>✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function openNewCatModal(){
+  state._catEditId=null;
+  state._catSelectedIcon='◈';
+  state._catSelectedColor='#DDD9D0';
+  document.getElementById('cat-modal-title').textContent='New Category';
+  document.getElementById('cat-name-input').value='';
+  syncCatPicker();
+  document.getElementById('cat-modal').classList.add('open');
+}
+
+function openEditCatModal(id){
+  const c=state.categories.find(x=>x.id===id); if(!c) return;
+  state._catEditId=id;
+  state._catSelectedIcon=c.icon;
+  state._catSelectedColor=c.color;
+  document.getElementById('cat-modal-title').textContent='Edit Category';
+  document.getElementById('cat-name-input').value=c.name;
+  syncCatPicker();
+  document.getElementById('cat-modal').classList.add('open');
+}
+
+function syncCatPicker(){
+  document.querySelectorAll('#cat-icon-picker .icon-opt').forEach(el=>el.classList.toggle('selected',el.dataset.icon===state._catSelectedIcon));
+  document.querySelectorAll('#cat-color-swatches .color-swatch').forEach(el=>el.classList.toggle('selected',el.dataset.color===state._catSelectedColor));
+}
+
+function selectCatIcon(el){
+  document.querySelectorAll('#cat-icon-picker .icon-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected'); state._catSelectedIcon=el.dataset.icon;
+}
+
+function selectCatColor(el){
+  document.querySelectorAll('#cat-color-swatches .color-swatch').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected'); state._catSelectedColor=el.dataset.color;
+}
+
+function saveCategory(){
+  const name=document.getElementById('cat-name-input').value.trim();
+  if(!name){ document.getElementById('cat-name-input').focus(); return; }
+  if(state._catEditId){
+    const c=state.categories.find(x=>x.id===state._catEditId);
+    if(c){ c.name=name; c.icon=state._catSelectedIcon; c.color=state._catSelectedColor; }
+  } else {
+    state.categories.push({id:'c'+Date.now(), name, icon:state._catSelectedIcon, color:state._catSelectedColor});
+  }
+  persist('nutrilog-categories',state.categories);
+  closeModal('cat-modal');
+  renderCategories();
+  renderStaples(); // refresh filter pills
+}
+
+function deleteCategory(id){
+  const count=stapleCount(id);
+  const msg = count>0
+    ? `Delete this category? ${count} staple(s) will become uncategorised.`
+    : 'Delete this category?';
+  if(!confirm(msg)) return;
+  state.categories=state.categories.filter(c=>c.id!==id);
+  // unassign from staples
+  state.staples.forEach(s=>{ if(s.categoryId===id) s.categoryId=null; });
+  persist('nutrilog-categories',state.categories);
+  persist('nutrilog-staples',state.staples);
+  renderCategories(); renderStaples(); renderStaplesStrip();
+}
+
+// ═══════════════════════════════════════════
+// RECIPES — HELPERS
+// ═══════════════════════════════════════════
+function recipeNutritionTotals(recipe, scale) {
+  scale = scale || 1;
+  return recipe.ingredients.reduce((t, ing) => {
+    const s = state.staples.find(x => x.id === ing.stapleId);
+    if (!s) return t;
+    const q = ing.qty * scale;
+    t.cals    += Math.round(s.cals * q);
+    t.protein += s.protein * q;
+    t.carbs   += s.carbs * q;
+    t.fat     += s.fat * q;
+    t.fiber   += s.fiber * q;
+    t.sodium  += Math.round(s.sodium * q);
+    return t;
+  }, {cals:0, protein:0, carbs:0, fat:0, fiber:0, sodium:0});
+}
+
+function roundMacro(v) { return Math.round(v * 10) / 10; }
+
+// ═══════════════════════════════════════════
+// RECIPES PAGE
+// ═══════════════════════════════════════════
+function renderRecipes() {
+  const wrap = document.getElementById('recipes-list-wrap');
+  if (!state.recipes.length) {
+    wrap.innerHTML = `<div class="empty-state"><div class="es-icon">⬡</div><p>No recipes yet.<br>Build your first recipe from your staples library.</p><button class="btn btn-primary" onclick="openNewRecipeModal()">+ New Recipe</button></div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="recipes-grid">${state.recipes.map(r => {
+    const tot = recipeNutritionTotals(r);
+    const ingCount = r.ingredients.length;
+    const catName = getCatName(r.categoryId);
+    const catColor = getCatColor(r.categoryId);
+    const ingRows = r.ingredients.map(ing => {
+      const s = state.staples.find(x => x.id === ing.stapleId);
+      if (!s) return `<div class="recipe-ingredient-row"><div class="recipe-ingredient-left"><span class="recipe-ingredient-icon">⚠</span><span class="recipe-missing">Staple removed</span></div></div>`;
+      const n = scaleN(s, ing.qty);
+      const qtyLabel = ing.qty === 1 ? s.serving : `${ing.qty}× ${s.serving}`;
+      return `<div class="recipe-ingredient-row">
+        <div class="recipe-ingredient-left">
+          <span class="recipe-ingredient-icon">${s.icon}</span>
+          <div>
+            <span>${s.name}</span>
+            <span class="recipe-ingredient-qty"> · ${qtyLabel}</span>
+          </div>
+        </div>
+        <span class="recipe-ingredient-cals">${n.cals} kcal · P ${roundMacro(n.protein)}g</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="recipe-card">
+      <div class="recipe-card-header">
+        <div class="recipe-card-title">
+          <div class="recipe-card-icon">${r.icon}</div>
+          <div>
+            <div class="recipe-card-name">${r.name}</div>
+            <div class="recipe-card-meta">${ingCount} ingredient${ingCount!==1?'s':''} · ${tot.cals} kcal · P ${roundMacro(tot.protein)}g · Fiber ${roundMacro(tot.fiber)}g <span class="cat-badge" style="background:${catColor};margin-left:6px;">${catName}</span></div>
+          </div>
+        </div>
+        <div class="recipe-card-actions">
+          <button class="btn btn-primary btn-sm" onclick="openRecipeServingModal('${r.id}')">+ Log</button>
+          <button class="btn btn-sm" onclick="openEditRecipeModal('${r.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteRecipe('${r.id}')">✕</button>
+        </div>
+      </div>
+      <div class="recipe-ingredients">${ingRows}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function deleteRecipe(id) {
+  if (!confirm('Delete this recipe?')) return;
+  state.recipes = state.recipes.filter(r => r.id !== id);
+  persist('nutrilog-recipes', state.recipes);
+  renderRecipes(); renderStaplesStrip();
+}
+
+// ═══════════════════════════════════════════
+// RECIPE MODAL — NEW / EDIT
+// ═══════════════════════════════════════════
+function openNewRecipeModal() {
+  state._recipeEditId = null;
+  state._recipeSelectedIcon = '🥤';
+  state._recipeIngredients = [];
+  document.getElementById('recipe-modal-title').textContent = 'New Recipe';
+  document.getElementById('re-name').value = '';
+  document.getElementById('re-servings').value = '1';
+  document.getElementById('re-ingredient-search').value = '';
+  populateRecipeCategorySelect();
+  syncRecipeIconPicker();
+  renderIngredientPicker();
+  renderRecipeIngredientsList();
+  document.getElementById('recipe-modal').classList.add('open');
+}
+
+function openEditRecipeModal(id) {
+  const r = state.recipes.find(x => x.id === id); if (!r) return;
+  state._recipeEditId = id;
+  state._recipeSelectedIcon = r.icon;
+  state._recipeIngredients = r.ingredients.map(i => ({...i}));
+  document.getElementById('recipe-modal-title').textContent = 'Edit Recipe';
+  document.getElementById('re-name').value = r.name;
+  document.getElementById('re-servings').value = r.servings || 1;
+  document.getElementById('re-ingredient-search').value = '';
+  populateRecipeCategorySelect();
+  document.getElementById('re-category').value = r.categoryId || '';
+  syncRecipeIconPicker();
+  renderIngredientPicker();
+  renderRecipeIngredientsList();
+  document.getElementById('recipe-modal').classList.add('open');
+}
+
+function populateRecipeCategorySelect() {
+  const sel = document.getElementById('re-category');
+  sel.innerHTML = '<option value="">— select category —</option>' +
+    state.categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+}
+
+function selectRecipeIcon(el) {
+  document.querySelectorAll('#re-icon-picker .icon-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  state._recipeSelectedIcon = el.dataset.icon;
+}
+
+function syncRecipeIconPicker() {
+  document.querySelectorAll('#re-icon-picker .icon-opt').forEach(el =>
+    el.classList.toggle('selected', el.dataset.icon === state._recipeSelectedIcon));
+}
+
+function renderIngredientPicker() {
+  const q = (document.getElementById('re-ingredient-search')?.value || '').toLowerCase();
+  const el = document.getElementById('re-ingredient-picker');
+  const filtered = state.staples.filter(s => !q || s.name.toLowerCase().includes(q));
+  if (!filtered.length) {
+    el.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--text3);">No staples found</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(s => {
+    const already = state._recipeIngredients.find(i => i.stapleId === s.id);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer;transition:background .1s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span>${s.icon}</span>
+        <div>
+          <div style="font-weight:500;">${s.name}</div>
+          <div style="font-size:10.5px;color:var(--text3);">${s.serving} · ${s.cals} kcal</div>
+        </div>
+      </div>
+      ${already
+        ? `<button class="btn btn-danger btn-sm" onclick="removeRecipeIngredient('${s.id}')">Remove</button>`
+        : `<button class="btn btn-primary btn-sm" onclick="addRecipeIngredient('${s.id}')">+ Add</button>`
+      }
+    </div>`;
+  }).join('');
+}
+
+function addRecipeIngredient(stapleId) {
+  if (!state._recipeIngredients.find(i => i.stapleId === stapleId)) {
+    state._recipeIngredients.push({ stapleId, qty: 1 });
+  }
+  renderIngredientPicker();
+  renderRecipeIngredientsList();
+}
+
+function removeRecipeIngredient(stapleId) {
+  state._recipeIngredients = state._recipeIngredients.filter(i => i.stapleId !== stapleId);
+  renderIngredientPicker();
+  renderRecipeIngredientsList();
+}
+
+function updateIngredientQty(stapleId, val) {
+  const ing = state._recipeIngredients.find(i => i.stapleId === stapleId);
+  if (ing) { ing.qty = Math.max(0.25, parseFloat(val) || 1); }
+  renderRecipeTotalPreview();
+}
+
+function renderRecipeIngredientsList() {
+  const el = document.getElementById('re-ingredients-list');
+  const empty = document.getElementById('re-ingredients-empty');
+  if (!state._recipeIngredients.length) {
+    el.innerHTML = '<div id="re-ingredients-empty" style="padding:12px 14px;font-size:12px;color:var(--text3);">No ingredients added yet</div>';
+    renderRecipeTotalPreview();
+    return;
+  }
+  el.innerHTML = state._recipeIngredients.map(ing => {
+    const s = state.staples.find(x => x.id === ing.stapleId);
+    if (!s) return '';
+    const n = scaleN(s, ing.qty);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px;gap:8px;">
+      <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;">
+        <span>${s.icon}</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.name}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <button style="width:24px;height:24px;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;font-size:13px;" onclick="stepIngQty('${s.id}',-0.25)">−</button>
+        <input type="number" value="${ing.qty}" min="0.25" step="0.25" style="width:46px;text-align:center;padding:3px 4px;border:1px solid var(--border);border-radius:5px;font-family:'DM Mono',monospace;font-size:11px;" onchange="updateIngredientQty('${s.id}',this.value)">
+        <button style="width:24px;height:24px;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;font-size:13px;" onclick="stepIngQty('${s.id}',0.25)">+</button>
+        <span style="font-size:10.5px;color:var(--text3);min-width:52px;text-align:right;">${n.cals} kcal</span>
+        <button class="btn btn-danger btn-sm" style="padding:3px 7px;" onclick="removeRecipeIngredient('${s.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  renderRecipeTotalPreview();
+}
+
+function stepIngQty(stapleId, d) {
+  const ing = state._recipeIngredients.find(i => i.stapleId === stapleId);
+  if (ing) { ing.qty = Math.max(0.25, Math.round((ing.qty + d) * 4) / 4); }
+  renderRecipeIngredientsList();
+}
+
+function renderRecipeTotalPreview() {
+  const el = document.getElementById('re-total-preview');
+  if (!state._recipeIngredients.length) { el.textContent = ''; return; }
+  const fake = { ingredients: state._recipeIngredients };
+  const t = recipeNutritionTotals(fake);
+  el.textContent = `Total: ${t.cals} kcal · P ${roundMacro(t.protein)}g · Fiber ${roundMacro(t.fiber)}g · Fat ${roundMacro(t.fat)}g`;
+}
+
+function saveRecipe() {
+  const name = document.getElementById('re-name').value.trim();
+  if (!name) { document.getElementById('re-name').focus(); return; }
+  if (!state._recipeIngredients.length) { alert('Add at least one ingredient.'); return; }
+  const recipe = {
+    id:          state._recipeEditId || ('r' + Date.now()),
+    name,
+    icon:        state._recipeSelectedIcon,
+    categoryId:  document.getElementById('re-category').value || null,
+    servings:    parseFloat(document.getElementById('re-servings').value) || 1,
+    ingredients: state._recipeIngredients.map(i => ({...i})),
+  };
+  if (state._recipeEditId) {
+    const idx = state.recipes.findIndex(r => r.id === state._recipeEditId);
+    if (idx >= 0) state.recipes[idx] = recipe;
+  } else {
+    state.recipes.push(recipe);
+  }
+  persist('nutrilog-recipes', state.recipes);
+  closeModal('recipe-modal');
+  renderRecipes(); renderStaplesStrip();
+}
+
+// ═══════════════════════════════════════════
+// RECIPE SERVING MODAL (log it)
+// ═══════════════════════════════════════════
+function openRecipeServingModal(recipeId) {
+  const r = state.recipes.find(x => x.id === recipeId); if (!r) return;
+  state._servingRecipe = r;
+  document.getElementById('rsm-icon').textContent = r.icon;
+  document.getElementById('rsm-name').textContent = r.name;
+  document.getElementById('rsm-ingredients').textContent =
+    r.ingredients.length + ' ingredient' + (r.ingredients.length !== 1 ? 's' : '');
+  document.getElementById('rsm-qty').value = r.servings || 1;
+  const sel = document.getElementById('rsm-meal-select');
+  sel.innerHTML = state.meals.map(m => `<option value="${m.id}">${m.name} (${m.time})</option>`).join('');
+  if (!state.meals.length) sel.innerHTML = '<option value="">— create a meal first —</option>';
+  updateRecipePreview();
+  document.getElementById('recipe-serving-modal').classList.add('open');
+}
+
+function adjustRecipeQty(d) {
+  const inp = document.getElementById('rsm-qty');
+  inp.value = Math.max(0.25, Math.round((parseFloat(inp.value || 1) + d) * 4) / 4);
+  updateRecipePreview();
+}
+
+function updateRecipePreview() {
+  const r = state._servingRecipe; if (!r) return;
+  const q = parseFloat(document.getElementById('rsm-qty').value) || 1;
+  const t = recipeNutritionTotals(r, q);
+  document.getElementById('rsm-nutrition-preview').innerHTML = `
+    <div class="np-row"><span>Calories</span><span>${t.cals} kcal</span></div>
+    <div class="np-row"><span>Protein</span><span>${roundMacro(t.protein)}g</span></div>
+    <div class="np-row"><span>Carbs</span><span>${roundMacro(t.carbs)}g</span></div>
+    <div class="np-row"><span>Fat</span><span>${roundMacro(t.fat)}g</span></div>
+    <div class="np-row"><span>Fiber</span><span>${roundMacro(t.fiber)}g</span></div>
+    <div class="np-row"><span>Sodium</span><span>${t.sodium}mg</span></div>`;
+}
+
+function confirmLogRecipe() {
+  const r = state._servingRecipe; if (!r) return;
+  const scale = parseFloat(document.getElementById('rsm-qty').value) || 1;
+  const mealId = parseInt(document.getElementById('rsm-meal-select').value);
+  let meal = state.meals.find(m => m.id === mealId);
+  if (!meal) {
+    meal = { id: Date.now(), name: 'Meal', icon: '◈', time: new Date().toTimeString().slice(0,5), items: [] };
+    state.meals.push(meal);
+  }
+  // Build the recipe log entry — a single item with _recipeId and _ingredients for the log
+  const tot = recipeNutritionTotals(r, scale);
+  const ingredientDetails = r.ingredients.map(ing => {
+    const s = state.staples.find(x => x.id === ing.stapleId);
+    if (!s) return null;
+    const n = scaleN(s, ing.qty * scale);
+    return { name: s.name, icon: s.icon, portion: scale === 1 ? s.serving : `${Math.round(ing.qty*scale*100)/100}× ${s.serving}`, ...n };
+  }).filter(Boolean);
+
+  meal.items.push({
+    name:     scale === 1 ? r.name : `${r.name} ×${scale}`,
+    portion:  `${r.ingredients.length} ingredients`,
+    cals:     tot.cals,
+    protein:  roundMacro(tot.protein),
+    carbs:    roundMacro(tot.carbs),
+    fat:      roundMacro(tot.fat),
+    fiber:    roundMacro(tot.fiber),
+    sodium:   tot.sodium,
+    _isRecipe: true,
+    _recipeIcon: r.icon,
+    _recipeIngredients: ingredientDetails,
+  });
+
+  closeModal('recipe-serving-modal');
+  renderDashboard();
+  if (state.currentPage === 'meals') { renderMeals(); }
+  setTimeout(() => document.getElementById('meal-body-' + meal.id)?.classList.add('open'), 40);
+}
+
+// ═══════════════════════════════════════════
+// ADD MEAL MODAL
+// ═══════════════════════════════════════════
+function openAddMealModal(){ document.getElementById('add-meal-modal').classList.add('open'); }
+
+function addMeal(){
+  const name=document.getElementById('meal-name-input').value.trim()||'New Meal';
+  const time=document.getElementById('meal-time-input').value;
+  const icons={breakfast:'☀️',lunch:'🌿',dinner:'🌙',snack:'◇'};
+  state.meals.push({id:Date.now(),name,time,icon:icons[name.toLowerCase()]||'◈',items:[]});
+  closeModal('add-meal-modal');
+  document.getElementById('meal-name-input').value='';
+  renderMeals(); renderStaplesStrip();
+}
+
+// ═══════════════════════════════════════════
+// MAIN SCAN PAGE
+// ═══════════════════════════════════════════
+function handleMainScan(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('main-preview-img').src=e.target.result;
+    document.getElementById('main-scan-preview').style.display='block';
+    document.getElementById('main-scan-loading').style.display='block';
+    document.getElementById('main-scan-result').classList.remove('show');
+    setTimeout(()=>{
+      document.getElementById('main-scan-loading').style.display='none';
+      state.scannedData={name:'Scanned Item',serving:'100g',cals:240,protein:12,carbs:30,fat:8,fiber:3,sodium:320};
+      document.getElementById('main-scan-table').innerHTML=Object.entries({'Calories':'240 kcal','Protein':'12 g','Carbs':'30 g','Fat':'8 g','Fiber':'3 g','Sodium':'320 mg'}).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+      document.getElementById('main-scan-result').classList.add('show');
+    },1800);
+  };
+  reader.readAsDataURL(file);
+}
+
+function addScannedToLog(){
+  if(!state.scannedData) return;
+  if(!state.meals.length) state.meals.push({id:Date.now(),name:'Meal',icon:'◈',time:'12:00',items:[]});
+  const d=state.scannedData;
+  state.meals[0].items.push({name:d.name,portion:d.serving,cals:d.cals,protein:d.protein,carbs:d.carbs,fat:d.fat,fiber:d.fiber,sodium:d.sodium});
+  alert('Added to log!'); resetMainScan(); renderDashboard();
+}
+
+function saveScannedAsStaple(){
+  if(!state.scannedData) return;
+  const d=state.scannedData;
+  openNewStapleModal({name:d.name,serving:d.serving,cals:d.cals,protein:d.protein,carbs:d.carbs,fat:d.fat,fiber:d.fiber,sodium:d.sodium});
+  showPage('staples');
+}
+
+function resetMainScan(){
+  document.getElementById('main-scan-preview').style.display='none';
+  document.getElementById('main-scan-result').classList.remove('show');
+  document.getElementById('scan-file').value='';
+  state.scannedData=null;
+}
+
+function addManualToLog(){
+  if(!state.meals.length) state.meals.push({id:Date.now(),name:'Meal',icon:'◈',time:'12:00',items:[]});
+  state.meals[0].items.push({name:document.getElementById('manual-name').value||'Item',portion:document.getElementById('manual-serving').value||'1 serving',cals:parseInt(document.getElementById('manual-cals').value)||0,protein:parseInt(document.getElementById('manual-protein').value)||0,carbs:parseInt(document.getElementById('manual-carbs').value)||0,fat:parseInt(document.getElementById('manual-fat').value)||0,fiber:parseInt(document.getElementById('manual-fiber').value)||0,sodium:parseInt(document.getElementById('manual-sodium').value)||0});
+  const btn=event.target; btn.textContent='✓ Added'; btn.style.background='#27AE60';
+  setTimeout(()=>{btn.textContent='Add to Log';btn.style.background='';renderDashboard();},900);
+}
+
+function saveManualAsStaple(){
+  openNewStapleModal({name:document.getElementById('manual-name').value,serving:document.getElementById('manual-serving').value,cals:parseInt(document.getElementById('manual-cals').value)||0,protein:parseInt(document.getElementById('manual-protein').value)||0,carbs:parseInt(document.getElementById('manual-carbs').value)||0,fat:parseInt(document.getElementById('manual-fat').value)||0,fiber:parseInt(document.getElementById('manual-fiber').value)||0,sodium:parseInt(document.getElementById('manual-sodium').value)||0});
+  showPage('staples');
+}
+
+// ═══════════════════════════════════════════
+// GOALS
+// ═══════════════════════════════════════════
+function saveGoals(){
+  state.goals.calories=parseInt(document.getElementById('goal-cals').value)||2000;
+  state.goals.proteinMin=parseInt(document.getElementById('goal-protein-min').value)||70;
+  state.goals.proteinMax=parseInt(document.getElementById('goal-protein-max').value)||85;
+  state.goals.fiberMin=parseInt(document.getElementById('goal-fiber-min').value)||30;
+  state.goals.fiberMax=parseInt(document.getElementById('goal-fiber-max').value)||35;
+  state.goals.sodium=parseInt(document.getElementById('goal-sodium').value)||2000;
+  const btn=event.target; btn.textContent='✓ Saved'; btn.style.background='#27AE60';
+  setTimeout(()=>{btn.textContent='Save Goals';btn.style.background='';},1500);
+}
+
+// ═══════════════════════════════════════════
+// WEEKLY
+// ═══════════════════════════════════════════
+function renderWeekly(){
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const today=(new Date().getDay()+6)%7;
+  const max=Math.max(...state.weeklyData);
+  document.getElementById('week-grid').innerHTML=days.map((d,i)=>{
+    const v=state.weeklyData[i]; const pct=Math.round(v/max*100);
+    return `<div class="day-col"><div class="day-label">${d}</div><div class="day-bar-wrap"><div class="day-bar ${i===today?'today':''}" style="height:${pct}%"></div></div><div class="day-cal">${v.toLocaleString()}</div></div>`;
+  }).join('');
+}
+
+function setWeekTab(el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
+
+// ═══════════════════════════════════════════
+// GENERIC MODAL CLOSE
+// ═══════════════════════════════════════════
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  // If cancelling the staple modal while in recipe flow, return to recipe modal
+  if(id === 'staple-modal' && state._stapleFromRecipe) {
+    state._stapleFromRecipe = false;
+    document.getElementById('recipe-modal').classList.add('open');
+  }
+}
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay, .qty-inline').forEach(overlay=>{
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) { overlay.classList.remove('open'); closeQtyInline(); } });
+});
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+renderDashboard();
+</script>
+</body>
+</html>
